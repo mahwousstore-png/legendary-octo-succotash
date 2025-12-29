@@ -1,9 +1,35 @@
-/* src/index.css - Updated as provided */
+/* src/index.css - نظام مهووس المحاسبي - Luxury Theme */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom Animations - Improved with smoother easing */
+/* ==========================================
+   🎨 Luxury Color Palette Variables
+   ========================================== */
+:root {
+  /* Gold */
+  --gold-primary: #D4AF37;
+  --gold-light: #F3DDA0;
+  --gold-dark: #B8962E;
+
+  /* Royal Black */
+  --black-royal: #000000;
+  --black-secondary: #111111;
+
+  /* White */
+  --white-pure: #FFFFFF;
+
+  /* Beige */
+  --beige-border: #E8E6D9;
+
+  /* Gray */
+  --gray-text: #808080;
+  --gray-page: #F5F5F7;
+}
+
+/* ==========================================
+   Custom Animations
+   ========================================== */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-20px); }
@@ -45,8 +71,14 @@
     transform: scale(1);
   }
 }
+@keyframes goldShine {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
 
-/* Custom Utilities - Enhanced with better performance */
+/* ==========================================
+   Animation Utilities
+   ========================================== */
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
@@ -58,7 +90,7 @@
 }
 .animate-shimmer {
   animation: shimmer 2s infinite linear;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.3), transparent);
   background-size: 200px 100%;
 }
 .animate-slideInUp {
@@ -71,43 +103,72 @@
   animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Glass Effect - Improved opacity and blur */
+/* ==========================================
+   💎 Luxury Glass Effects
+   ========================================== */
 .glass {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(59, 130, 246, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--beige-border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 .glass-dark {
-  background: rgba(37, 99, 235, 0.95);
+  background: rgba(17, 17, 17, 0.98);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+.glass-gold {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(243, 221, 160, 0.1) 100%);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 8px 32px rgba(212, 175, 55, 0.15);
 }
 
-/* Gradient Text - Enhanced gradient */
+/* ==========================================
+   🟡 Gold Gradient Text
+   ========================================== */
 .gradient-text {
-  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #1e40af 100%);
+  background: linear-gradient(135deg, #D4AF37 0%, #F3DDA0 50%, #D4AF37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-dark {
+  background: linear-gradient(135deg, #B8962E 0%, #D4AF37 50%, #B8962E 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Hide Scrollbar - Completely hidden but scrollable */
-* {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-}
-*::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+/* Gold shimmer effect for buttons */
+.gold-shimmer {
+  background: linear-gradient(90deg, #D4AF37, #F3DDA0, #D4AF37);
+  background-size: 200% 100%;
+  animation: goldShine 3s ease-in-out infinite;
 }
 
-/* Smooth Transitions - Optimized for performance */
+/* ==========================================
+   Hide Scrollbar
+   ========================================== */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==========================================
+   Smooth Transitions
+   ========================================== */
 * {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* RTL Support - Enhanced for Arabic */
+/* ==========================================
+   RTL Support for Arabic
+   ========================================== */
 [dir="rtl"] {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   text-align: right;
@@ -119,22 +180,50 @@
   text-align: left;
 }
 
-/* Additional Improvements: Hover effects and focus states */
+/* ==========================================
+   💎 Luxury Button Styles
+   ========================================== */
 .btn-hover {
   transition: all 0.2s ease-in-out;
 }
 .btn-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.25);
+}
+.btn-gold {
+  background: linear-gradient(135deg, #D4AF37 0%, #E4BD5B 100%);
+  color: #000000;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.25);
+}
+.btn-gold:hover {
+  background: linear-gradient(135deg, #E4BD5B 0%, #D4AF37 100%);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.35);
+  transform: translateY(-2px);
+}
+.btn-royal {
+  background: linear-gradient(135deg, #111111 0%, #000000 100%);
+  color: #D4AF37;
+  font-weight: 600;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+.btn-royal:hover {
+  border-color: #D4AF37;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
 }
 
-/* Focus visible for accessibility */
+/* ==========================================
+   Focus States (Accessibility)
+   ========================================== */
 *:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #D4AF37;
   outline-offset: 2px;
 }
 
-/* Responsive improvements */
+/* ==========================================
+   Responsive Improvements
+   ========================================== */
 @media (max-width: 768px) {
   .glass {
     backdrop-filter: blur(8px);
@@ -144,10 +233,47 @@
   }
 }
 
-/* منع تمرير الصفحة تمامًا عند فتح النافذة */
+/* ==========================================
+   Modal Scroll Lock
+   ========================================== */
 body.modal-open {
   position: fixed;
   width: 100%;
   overflow: hidden;
   top: var(--scroll-y);
+}
+
+/* ==========================================
+   💎 Luxury Card Styles
+   ========================================== */
+.card-luxury {
+  background: #FFFFFF;
+  border: 1px solid #E8E6D9;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+.card-luxury:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+/* Gold accent border for important cards */
+.card-gold-accent {
+  border-right: 4px solid #D4AF37;
+}
+
+/* ==========================================
+   Table Styles
+   ========================================== */
+.table-luxury th {
+  background: #F5F5F7;
+  color: #111111;
+  font-weight: 600;
+  border-bottom: 2px solid #E8E6D9;
+}
+.table-luxury td {
+  border-bottom: 1px solid #E8E6D9;
+}
+.table-luxury tr:hover td {
+  background: rgba(212, 175, 55, 0.05);
 }
