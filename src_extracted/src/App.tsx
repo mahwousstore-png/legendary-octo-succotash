@@ -176,11 +176,11 @@ function App() {
   // === شاشة التحميل ===
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-page-100 flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center" dir="rtl">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 text-gold-500 animate-spin mx-auto mb-4" />
-          <p className="text-lg font-medium text-royal-800">جاري تحميل النظام...</p>
-          <p className="text-sm text-royal-300 mt-2">التحقق من الصلاحيات</p>
+          <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-lg font-medium text-blue-800">جاري تحميل النظام...</p>
+          <p className="text-sm text-blue-600 mt-2">التحقق من الصلاحيات</p>
         </div>
       </div>
     );
@@ -193,30 +193,30 @@ function App() {
 
   // === الواجهة الرئيسية بعد التحقق من الصلاحيات ===
   return (
-    <div className="min-h-screen bg-page-100 font-sans relative" dir="rtl">
+    <div className="min-h-screen bg-white font-sans relative" dir="rtl">
       {/* الهيدر */}
-      <header className="bg-royal-900 border-b border-gold-500/30 fixed top-0 left-0 right-0 z-40 shadow-lg">
+      <header className="bg-white border-b border-blue-100 fixed top-0 left-0 right-0 z-40 shadow-sm">
         <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-8">
           <div className="flex justify-between items-center h-14 md:h-16">
             <div className="flex items-center space-x-2 md:space-x-4 space-x-reverse">
               <button
                 onClick={() => setIsSidebarOpen(prev => !prev)}
-                className="p-1.5 md:p-2 rounded-lg hover:bg-royal-800 text-gold-500 hover:text-gold-400 transition-colors duration-200"
+                className="p-1.5 md:p-2 rounded-lg hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-colors duration-200"
               >
                 <Menu className="h-5 w-5 md:h-6 md:w-6" />
               </button>
               <img
                 src="https://ik.imagekit.io/hkp0zcyja/%D9%85%D9%86%D9%88%D8%B9/%D8%B4%D8%B9%D8%A7%D8%B1-%D9%85%D9%87%D9%88%D9%88%D8%B3.webp"
                 alt="مهووس | Mahwous"
-                className="h-8 w-8 md:h-12 md:w-12 rounded-lg shadow-md ring-2 ring-gold-500/50"
+                className="h-8 w-8 md:h-12 md:w-12 rounded-lg shadow-md ring-1 ring-blue-100"
               />
               <div className="hidden sm:block">
-                <h1 className="text-base md:text-xl font-bold text-gold-500">مهووس | Mahwous</h1>
-                <div className="hidden md:flex items-center space-x-2 space-x-reverse text-xs md:text-sm text-royal-300 mt-1">
+                <h1 className="text-base md:text-xl font-bold text-blue-800">مهووس | Mahwous</h1>
+                <div className="hidden md:flex items-center space-x-2 space-x-reverse text-xs md:text-sm text-blue-600 mt-1">
                   <img
                     src="https://cdn.salla.network/images/logo/logo-wide.svg"
                     alt="منصة سلة"
-                    className="h-3 md:h-4 w-auto opacity-60"
+                    className="h-3 md:h-4 w-auto opacity-80"
                   />
                   <span>نظام إدارة الطلبات متصل بمنصة سلة</span>
                 </div>
@@ -226,17 +226,17 @@ function App() {
             <div className="flex items-center space-x-2 md:space-x-4 space-x-reverse">
               <div className="flex items-center space-x-2 md:space-x-3 space-x-reverse">
                 <div className="text-right hidden md:block">
-                  <p className="text-xs md:text-sm font-medium text-white">{currentUser?.full_name}</p>
-                  <p className="text-xs text-gold-400">
+                  <p className="text-xs md:text-sm font-medium text-gray-900">{currentUser?.full_name}</p>
+                  <p className="text-xs text-gray-500">
                     {currentUser?.role === 'admin' ? 'مدير' : 'مستخدم'}
                   </p>
                 </div>
-                <div className="bg-gold-500 text-royal-900 p-1.5 md:p-2 rounded-full">
+                <div className="bg-blue-100 text-blue-600 p-1.5 md:p-2 rounded-full">
                   <User className="h-4 w-4 md:h-5 md:w-5" />
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="p-1.5 md:p-2 text-royal-300 hover:text-red-400 hover:bg-royal-800 rounded-lg transition-colors duration-200"
+                  className="p-1.5 md:p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
                   title="تسجيل الخروج"
                 >
                   <LogOut className="h-4 w-4" />
@@ -244,7 +244,7 @@ function App() {
               </div>
             </div>
 
-            <div className="hidden xl:flex items-center space-x-2 space-x-reverse text-xs text-royal-400">
+            <div className="hidden xl:flex items-center space-x-2 space-x-reverse text-xs text-gray-500">
               <img
                 src="https://profilecdn.haraj.com.sa/12722282/avatar-md.webp"
                 alt="شعار Verinty"
@@ -260,16 +260,16 @@ function App() {
         {/* Overlay للموبايل */}
         {isSidebarOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-60 z-20 md:hidden"
+            className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
             onClick={() => setIsSidebarOpen(false)}
           ></div>
         )}
 
         {/* السايدبار - يظهر فقط بعد التحقق من الصلاحيات */}
         <div
-          className={`w-56 md:w-64 bg-royal-800 border-l border-gold-500/20 fixed right-0 top-14 md:top-16 bottom-0 overflow-y-auto transform transition-transform duration-300 ease-in-out ${
+          className={`w-56 md:w-64 bg-white border-l border-blue-100 fixed right-0 top-14 md:top-16 bottom-0 overflow-y-auto transform transition-transform duration-300 ease-in-out ${
             isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-          } shadow-xl z-30`}
+          } shadow-md z-30`}
         >
           <nav className="p-3 md:p-6">
             <div className="space-y-4 md:space-y-6">
@@ -279,7 +279,7 @@ function App() {
 
                 return (
                   <div key={key}>
-                    <h3 className="text-xs font-semibold text-gold-500 uppercase tracking-wider mb-2 md:mb-4 border-b border-gold-500/20 pb-1 md:pb-2">
+                    <h3 className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-2 md:mb-4 border-b border-blue-100 pb-1 md:pb-2">
                       {label}
                     </h3>
                     {itemsInCategory.map(item => {
@@ -297,13 +297,11 @@ function App() {
                           }}
                           className={`
                             w-full flex items-center space-x-2 md:space-x-3 space-x-reverse px-2 md:px-4 py-2 md:py-3 rounded-lg text-xs md:text-sm font-medium
-                            transition-all duration-200
-                            ${isActive
-                              ? 'bg-gold-500 text-royal-900 border-r-2 border-gold-300 shadow-gold'
-                              : 'text-royal-100 hover:bg-royal-700 hover:text-gold-400'}
+                            transition-all duration-200 hover:bg-blue-50
+                            ${isActive ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-300' : 'text-gray-700 hover:text-blue-600'}
                           `}
                         >
-                          <Icon className={`h-4 w-4 md:h-5 md:w-5 ${isActive ? 'text-royal-900' : 'text-royal-300'}`} />
+                          <Icon className={`h-4 w-4 md:h-5 md:w-5 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
                           <span>{item.label}</span>
                         </button>
                       );
@@ -318,14 +316,14 @@ function App() {
         {/* المحتوى الرئيسي */}
         <div className={`flex-1 ${isSidebarOpen ? 'mr-56 md:mr-64' : 'mr-0'} transition-all duration-300`}>
           <div className="p-2 md:p-6">
-            <div className="bg-white rounded-lg md:rounded-xl shadow-luxury min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-8rem)] border border-beige-200">
+            <div className="bg-white rounded-lg md:rounded-xl shadow-md min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-8rem)] border border-blue-50">
               {/* رسالة عدم وجود صلاحية */}
               {!hasPermissionForTab(activeTab) ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <Lock className="h-16 w-16 text-royal-300 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-royal-800 mb-2">غير مصرح لك</h3>
-                    <p className="text-royal-400">ليس لديك صلاحية للوصول إلى هذه الصفحة</p>
+                    <Lock className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">غير مصرح لك</h3>
+                    <p className="text-gray-600">ليس لديك صلاحية للوصول إلى هذه الصفحة</p>
                   </div>
                 </div>
               ) : (
