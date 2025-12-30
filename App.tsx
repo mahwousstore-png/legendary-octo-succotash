@@ -30,6 +30,7 @@ import CustomReports from './components/CustomReports';
 import Suppliers from './components/Suppliers';
 import PaymentMethodsDashboard from './components/PaymentMethodsDashboard';
 import EmployeeBalances from './components/EmployeeBalances';
+import SupplierLedger from './components/SupplierLedger';
 import UserManagement from './components/UserManagement';
 import LoginPage from './components/LoginPage';
 import LoadingPage from './components/LoadingPage';
@@ -62,6 +63,7 @@ function App() {
     { id: 'payment-methods', label: 'طرق الدفع', icon: CreditCard, category: 'financial' },
     { id: 'employee-balances', label: 'أرصدة الموظفين', icon: Wallet, category: 'financial' },
     { id: 'suppliers', label: 'إدارة الموردين', icon: Users2, category: 'financial' },
+    { id: 'supplier-ledger', label: 'مستحقات الموردين', icon: Truck, category: 'financial' },
     { id: 'expenses', label: 'المصروفات', icon: DollarSign, category: 'financial' },
     { id: 'inventory', label: 'المخزون', icon: Package, category: 'financial' },
     { id: 'reports', label: 'التقارير', icon: FileText, category: 'main' },
@@ -79,6 +81,7 @@ function App() {
       'payment-methods': 'payment-methods',
       'employee-balances': 'employee-balances',
       'suppliers': 'suppliers',
+      'supplier-ledger': 'supplier-ledger',
       'expenses': 'expenses',
       'inventory': 'inventory',
       'cancelled-orders': 'cancelled-orders',
@@ -330,6 +333,7 @@ function App() {
                   {activeTab === 'payment-methods' && <PaymentMethodsDashboard />}
                   {activeTab === 'employee-balances' && <EmployeeBalances />}
                   {activeTab === 'suppliers' && <Suppliers />}
+                  {activeTab === 'supplier-ledger' && <SupplierLedger />}
                   {activeTab === 'expenses' && <Expenses />}
                   {activeTab === 'inventory' && <Inventory />}
                   {activeTab === 'cancelled-orders' && <CancelledOrders />}
