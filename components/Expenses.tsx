@@ -6,6 +6,8 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import toast, { Toaster } from 'react-hot-toast';
+import { logExpenseCreated, logExpenseDeleted } from '../lib/auditLogger';
 
 interface Expense {
   id: string;
@@ -41,6 +43,9 @@ const Expenses: React.FC = () => {
   const [toDate, setToDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const currentUser = authService.getCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
 
   const [formData, setFormData] = useState({
     description: '',
@@ -398,6 +403,7 @@ const Expenses: React.FC = () => {
           .update(expenseData)
           .eq('id', editingExpense.id);
         if (error) throw error;
+        toast.success('تم تحديث المصروف بنجاح');
       } else {
         // Get current user from authService
         const currentUser = authService.getCurrentUser();
@@ -420,10 +426,20 @@ const Expenses: React.FC = () => {
 
         console.log('💾 Inserting expense:', expenseToInsert);
 
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('expenses')
-          .insert([expenseToInsert]);
+          .insert([expenseToInsert])
+          .select()
+          .single();
+        
         if (error) throw error;
+        
+        // تسجيل في سجل الأحداث
+        if (data) {
+          await logExpenseCreated(data.id, data.amount);
+        }
+        
+        toast.success('تم إضافة المصروف بنجاح');
       }
       await fetchExpenses();
       setFormData({
@@ -436,6 +452,7 @@ const Expenses: React.FC = () => {
       setEditingExpense(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ في حفظ البيانات');
+      toast.error('حدث خطأ في حفظ البيانات');
     }
   };
 
@@ -451,16 +468,30 @@ const Expenses: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    const currentUser = authService.getCurrentUser();
+    
+    if (currentUser?.role !== 'admin') {
+      toast.error('غير مصرح لك بالحذف');
+      return;
+    }
+    
     if (!confirm('هل أنت متأكد من حذف هذا المصروف؟')) return;
+    
     try {
       const { error } = await supabase
         .from('expenses')
         .delete()
         .eq('id', id);
       if (error) throw error;
+      
+      // تسجيل في سجل الأحداث
+      await logExpenseDeleted(id);
+      
       await fetchExpenses();
+      toast.success('تم حذف المصروف بنجاح');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ في حذف البيانات');
+      toast.error('حدث خطأ في حذف البيانات');
     }
   };
 
@@ -513,6 +544,7 @@ const Expenses: React.FC = () => {
 
   return (
     <div className="p-6 min-h-screen bg-gray-50">
+      <Toaster position="top-center" reverseOrder={false} />
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -686,12 +718,14 @@ const Expenses: React.FC = () => {
                       >
                         <Edit className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(expense.id)}
-                        className="text-red-600 hover:text-red-900 p-1 rounded transition-colors duration-150"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDelete(expense.id)}
+                          className="text-red-600 hover:text-red-900 p-1 rounded transition-colors duration-150"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

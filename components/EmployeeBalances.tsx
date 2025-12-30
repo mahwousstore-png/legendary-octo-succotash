@@ -9,6 +9,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { logCustodyDeleted } from '../lib/auditLogger';
 
 interface UserProfile {
   id: string;
@@ -186,7 +187,10 @@ const EmployeeAdvances: React.FC = () => {
   };
 
   const confirmDelete = async () => {
-    if (!currentUser || currentUser.role !== 'admin' || !transactionToDelete) return;
+    if (!currentUser || currentUser.role !== 'admin' || !transactionToDelete) {
+      toast.error('غير مصرح لك بالحذف');
+      return;
+    }
 
     try {
       const { error: deleteError } = await supabase
@@ -195,6 +199,9 @@ const EmployeeAdvances: React.FC = () => {
         .eq('id', transactionToDelete.id);
 
       if (deleteError) throw deleteError;
+
+      // تسجيل في سجل الأحداث
+      await logCustodyDeleted(transactionToDelete.id, transactionToDelete.amount);
 
       setSelectedEmployee(prev => ({
         ...prev!,

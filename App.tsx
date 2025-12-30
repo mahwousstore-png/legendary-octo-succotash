@@ -31,6 +31,7 @@ import Suppliers from './components/Suppliers';
 import PaymentMethodsDashboard from './components/PaymentMethodsDashboard';
 import EmployeeBalances from './components/EmployeeBalances';
 import UserManagement from './components/UserManagement';
+import AuditLogs from './components/AuditLogs';
 import LoginPage from './components/LoginPage';
 import LoadingPage from './components/LoadingPage';
 
@@ -66,6 +67,7 @@ function App() {
     { id: 'inventory', label: 'المخزون', icon: Package, category: 'financial' },
     { id: 'reports', label: 'التقارير', icon: FileText, category: 'main' },
     { id: 'custom-reports', label: 'التقارير المخصصة', icon: FileText, category: 'main' },
+    { id: 'audit-logs', label: 'سجل الأحداث', icon: FileText, category: 'admin' },
     { id: 'users', label: 'إدارة المستخدمين', icon: Users, category: 'admin' },
   ];
 
@@ -84,6 +86,7 @@ function App() {
       'cancelled-orders': 'cancelled-orders',
       'reports': 'reports',
       'custom-reports': 'reports',
+      'audit-logs': 'users',
       'users': 'users',
     };
     return map[id] || null;
@@ -335,6 +338,7 @@ function App() {
                   {activeTab === 'cancelled-orders' && <CancelledOrders />}
                   {activeTab === 'reports' && <Reports />}
                   {activeTab === 'custom-reports' && <CustomReports />}
+                  {activeTab === 'audit-logs' && <AuditLogs />}
                   {activeTab === 'users' && <UserManagement />}
                 </>
               )}
