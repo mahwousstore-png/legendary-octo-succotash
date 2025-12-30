@@ -10,6 +10,8 @@ import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { formatDateTime } from '../lib/dateFormatter'; // استيراد دالة formatDateTime المركزية
+import GlobalPeriodFilter from './GlobalPeriodFilter';
+import { usePeriodFilter } from '../lib/usePeriodFilter';
 
 interface UserProfile {
   id: string;
@@ -505,6 +507,10 @@ const EmployeeAdvances: React.FC = () => {
   if (selectedEmployee) {
     const { user, current_balance, transactions, pending_transactions } = selectedEmployee;
 
+    // تطبيق الفلتر الزمني على المعاملات
+    const filteredTransactions = usePeriodFilter(transactions, 'transaction_date');
+    const filteredPendingTransactions = usePeriodFilter(pending_transactions || [], 'transaction_date');
+
     return (
       <div className="p-3 md:p-6 max-w-7xl mx-auto">
         <Toaster position="top-center" reverseOrder={false} />
@@ -547,6 +553,9 @@ const EmployeeAdvances: React.FC = () => {
           </div>
         </div>
 
+        {/* الفلتر الزمني الشامل */}
+        <GlobalPeriodFilter />
+
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl md:rounded-2xl p-4 md:p-6 mb-4 md:mb-8 shadow-sm">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3">
             <h3 className="text-lg md:text-xl font-bold text-gray-800">ملخص العهده</h3>
@@ -568,21 +577,21 @@ const EmployeeAdvances: React.FC = () => {
             </div>
             <div className="flex justify-between text-sm md:text-base">
               <span className="text-gray-700 font-medium">عدد العمليات:</span>
-              <span className="font-bold text-gray-900">{transactions.length}</span>
+              <span className="font-bold text-gray-900">{filteredTransactions.length}</span>
             </div>
           </div>
         </div>
 
         {/* Pending custody confirmations section - only show for employees viewing their own pending */}
-        {pending_transactions && pending_transactions.length > 0 && currentUser?.id === user.id && (
+        {filteredPendingTransactions && filteredPendingTransactions.length > 0 && currentUser?.id === user.id && (
           <div className="bg-blue-50 border-2 border-blue-200 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm mb-4 md:mb-6">
             <h3 className="text-base md:text-xl font-bold text-blue-800 mb-4 md:mb-5 flex items-center">
               <AlertCircle className="h-5 w-5 md:h-6 md:w-6 ml-2" />
-              العهد في انتظار التأكيد ({pending_transactions.length})
+              العهد في انتظار التأكيد ({filteredPendingTransactions.length})
             </h3>
             <p className="text-sm text-blue-700 mb-4">لديك عهد جديدة تحتاج إلى تأكيد الاستلام</p>
             <div className="space-y-2 md:space-y-3">
-              {pending_transactions.map(t => (
+              {filteredPendingTransactions.map(t => (
                 <div key={t.id} className="bg-white border-2 border-blue-300 rounded-lg md:rounded-xl p-3 md:p-4 shadow-sm">
                   <div className="flex flex-col gap-3">
                     <div className="flex justify-between items-start">
@@ -659,13 +668,13 @@ const EmployeeAdvances: React.FC = () => {
         <div className="bg-white border border-gray-200 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm">
           <h3 className="text-base md:text-xl font-bold text-gray-800 mb-4 md:mb-5 flex items-center">
             <Receipt className="h-5 w-5 md:h-6 md:w-6 ml-2 text-amber-600" />
-            سجل العهده ({transactions.length})
+            سجل العهده ({filteredTransactions.length})
           </h3>
           <div className="space-y-2 md:space-y-3 max-h-96 overflow-y-auto">
-            {transactions.length === 0 ? (
+            {filteredTransactions.length === 0 ? (
               <p className="text-center text-gray-500 py-6">لا توجد عمليات في عهده بعد</p>
             ) : (
-              transactions.map(t => (
+              filteredTransactions.map(t => (
                 <div key={t.id} className={`rounded-lg md:rounded-xl p-3 md:p-4 shadow-sm ${t.type === 'credit'
                   ? 'bg-gradient-to-r from-amber-50 to-yellow-50'
                   : 'bg-gradient-to-r from-red-50 to-rose-50'
@@ -886,6 +895,9 @@ const EmployeeAdvances: React.FC = () => {
           <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 mb-2 md:mb-3">عهد الموظفين</h2>
           <p className="text-gray-600 text-sm md:text-lg">اضغط على أي موظف لعرض عهده</p>
         </div>
+
+        {/* الفلتر الزمني الشامل */}
+        <GlobalPeriodFilter />
 
         <div className="mb-4 md:mb-8 bg-white border border-gray-200 rounded-lg md:rounded-xl p-4 md:p-6 shadow-sm">
           <div className="flex items-center justify-between">
