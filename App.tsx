@@ -13,7 +13,6 @@ import {
   Users2,
   CreditCard,
   Wallet,
-  Loader2,
   Package,
   X,
   Truck,
@@ -33,6 +32,7 @@ import PaymentMethodsDashboard from './components/PaymentMethodsDashboard';
 import EmployeeBalances from './components/EmployeeBalances';
 import UserManagement from './components/UserManagement';
 import LoginPage from './components/LoginPage';
+import LoadingPage from './components/LoadingPage';
 
 import { useOrders } from './hooks/useOrders';
 import { authService } from './lib/auth';
@@ -175,15 +175,7 @@ function App() {
 
   // === شاشة التحميل ===
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-page-100 flex items-center justify-center" dir="rtl">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 text-gold-500 animate-spin mx-auto mb-4" />
-          <p className="text-lg font-medium text-royal-800">جاري تحميل النظام...</p>
-          <p className="text-sm text-royal-300 mt-2">التحقق من الصلاحيات</p>
-        </div>
-      </div>
-    );
+    return <LoadingPage />;
   }
 
   // === شاشة تسجيل الدخول ===
