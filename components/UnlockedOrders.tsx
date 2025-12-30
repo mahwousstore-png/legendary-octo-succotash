@@ -1438,10 +1438,10 @@ ${pastedText}
                       </button>
                       {/* القائمة المنسدلة في الجوال */}
                       {isActionsOpen && (
-                        <div className="sm:hidden absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-2 w-48 z-10">
+                        <div className="sm:hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-2 z-20 mx-2">
                           <button
                             onClick={() => { setViewOrder(order); setOpenActionsId(null); }}
-                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3"
+                            className="w-full text-right px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3"
                           >
                             <Eye className="h-4 w-4 text-indigo-600" /> عرض التفاصيل
                           </button>
@@ -1454,7 +1454,7 @@ ${pastedText}
                                     setShowAddProductModal(true);
                                     setOpenActionsId(null);
                                   }}
-                                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3"
+                                  className="w-full text-right px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3"
                                 >
                                   <Plus className="h-4 w-4 text-blue-600" /> إضافة منتج
                                 </button>
@@ -1464,7 +1464,7 @@ ${pastedText}
                                   openLockSingleModal(order);
                                   setOpenActionsId(null);
                                 }}
-                                className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3"
+                                className="w-full text-right px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3"
                               >
                                 <CheckCircle className="h-4 w-4 text-emerald-600" /> إقفال مع التكاليف
                               </button>
@@ -1474,7 +1474,7 @@ ${pastedText}
                                     openCancelModal(order.id);
                                     setOpenActionsId(null);
                                   }}
-                                  className="w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 flex items-center gap-3"
+                                  className="w-full text-right px-4 py-2 text-sm text-red-700 hover:bg-red-50 flex items-center gap-3"
                                 >
                                   <X className="h-4 w-4 text-red-600" /> إلغاء الطلب
                                 </button>
@@ -1571,117 +1571,117 @@ ${pastedText}
       </div>
       {/* === مودال عرض تفاصيل الطلب === */}
       {viewOrder && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-center mb-6 border-b pb-4">
-              <h3 className="text-2xl font-bold text-slate-800">تفاصيل الطلب #{viewOrder.order_number}</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4">
+          <div className="bg-white rounded-xl md:rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
+            <div className="flex justify-between items-center mb-4 md:mb-6 border-b pb-3 md:pb-4">
+              <h3 className="text-lg md:text-2xl font-bold text-slate-800">تفاصيل الطلب #{viewOrder.order_number}</h3>
               <button onClick={() => setViewOrder(null)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-                <X className="h-6 w-6 text-slate-500" />
+                <X className="h-5 w-5 md:h-6 md:w-6 text-slate-500" />
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <div className="space-y-6">
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
-                  <div className="p-3 bg-indigo-100 rounded-xl">
-                    <User className="h-6 w-6 text-indigo-600" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8 mb-6 md:mb-8">
+              <div className="space-y-3 md:space-y-6">
+                <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-slate-50 rounded-lg md:rounded-xl">
+                  <div className="p-2 md:p-3 bg-indigo-100 rounded-lg md:rounded-xl">
+                    <User className="h-4 w-4 md:h-6 md:w-6 text-indigo-600" />
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-slate-600">اسم العميل</p>
-                    <p className="font-semibold text-slate-800">{viewOrder.customer_name || 'غير مسجل'}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
-                  <div className="p-3 bg-green-100 rounded-xl">
-                    <Phone className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-slate-600">رقم الهاتف</p>
-                    <p className="font-semibold text-slate-800">{viewOrder.phone_number || 'غير مسجل'}</p>
+                  <div className="text-right min-w-0 flex-1">
+                    <p className="text-xs md:text-sm text-slate-600">اسم العميل</p>
+                    <p className="font-semibold text-slate-800 text-sm md:text-base truncate">{viewOrder.customer_name || 'غير مسجل'}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
-                  <div className="p-3 bg-blue-100 rounded-xl">
-                    <Clock className="h-6 w-6 text-blue-600" />
+                <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-slate-50 rounded-lg md:rounded-xl">
+                  <div className="p-2 md:p-3 bg-green-100 rounded-lg md:rounded-xl">
+                    <Phone className="h-4 w-4 md:h-6 md:w-6 text-green-600" />
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-slate-600">تاريخ ووقت الطلب</p>
-                    <p className="font-semibold text-slate-800">{formatDateTime(viewOrder.order_date)}</p>
+                    <p className="text-xs md:text-sm text-slate-600">رقم الهاتف</p>
+                    <p className="font-semibold text-slate-800 text-sm md:text-base">{viewOrder.phone_number || 'غير مسجل'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-slate-50 rounded-lg md:rounded-xl">
+                  <div className="p-2 md:p-3 bg-blue-100 rounded-lg md:rounded-xl">
+                    <Clock className="h-4 w-4 md:h-6 md:w-6 text-blue-600" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs md:text-sm text-slate-600">تاريخ ووقت الطلب</p>
+                    <p className="font-semibold text-slate-800 text-sm md:text-base">{formatDateTime(viewOrder.order_date)}</p>
                   </div>
                 </div>
               </div>
-              <div className="space-y-6">
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
-                  <div className="p-3 bg-purple-100 rounded-xl">
-                    <Truck className="h-6 w-6 text-purple-600" />
+              <div className="space-y-3 md:space-y-6">
+                <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-slate-50 rounded-lg md:rounded-xl">
+                  <div className="p-2 md:p-3 bg-purple-100 rounded-lg md:rounded-xl">
+                    <Truck className="h-4 w-4 md:h-6 md:w-6 text-purple-600" />
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-slate-600">شركة الشحن</p>
-                    <p className="font-semibold text-slate-800">{viewOrder.shipping_company || 'غير مسجل'}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
-                  <div className="p-3 bg-emerald-100 rounded-xl">
-                    <DollarSign className="h-6 w-6 text-emerald-600" />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-slate-600">تكلفة الشحن</p>
-                    <p className="font-semibold text-slate-800">{formatSAR(viewOrder.shipping_cost ?? 0, true)}</p>
+                  <div className="text-right min-w-0 flex-1">
+                    <p className="text-xs md:text-sm text-slate-600">شركة الشحن</p>
+                    <p className="font-semibold text-slate-800 text-sm md:text-base truncate">{viewOrder.shipping_company || 'غير مسجل'}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
-                  <div className="p-3 bg-amber-100 rounded-xl">
-                    <CreditCard className="h-6 w-6 text-amber-600" />
+                <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-slate-50 rounded-lg md:rounded-xl">
+                  <div className="p-2 md:p-3 bg-emerald-100 rounded-lg md:rounded-xl">
+                    <DollarSign className="h-4 w-4 md:h-6 md:w-6 text-emerald-600" />
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-slate-600">طريقة الدفع</p>
-                    <p className="font-semibold text-slate-800">{getPaymentMethodLabel(viewOrder.payment_method)}</p>
+                    <p className="text-xs md:text-sm text-slate-600">تكلفة الشحن</p>
+                    <p className="font-semibold text-slate-800 text-sm md:text-base">{formatSAR(viewOrder.shipping_cost ?? 0, true)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-slate-50 rounded-lg md:rounded-xl">
+                  <div className="p-2 md:p-3 bg-amber-100 rounded-lg md:rounded-xl">
+                    <CreditCard className="h-4 w-4 md:h-6 md:w-6 text-amber-600" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs md:text-sm text-slate-600">طريقة الدفع</p>
+                    <p className="font-semibold text-slate-800 text-sm md:text-base">{getPaymentMethodLabel(viewOrder.payment_method)}</p>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="mb-8">
-              <h4 className="text-xl font-bold text-slate-800 mb-4 text-right">المنتجات</h4>
-              <div className="space-y-3">
+            <div className="mb-6 md:mb-8">
+              <h4 className="text-lg md:text-xl font-bold text-slate-800 mb-3 md:mb-4 text-right">المنتجات</h4>
+              <div className="space-y-2 md:space-y-3">
                 {viewOrder.products?.map((product, i) => (
-                  <div key={i} className="bg-slate-50 rounded-xl p-4 flex justify-between items-center">
-                    <div className="text-right">
-                      <p className="font-semibold text-slate-800">{product.name}</p>
-                      <p className="text-sm text-slate-600">الكمية: {product.quantity}</p>
-                      <p className="text-sm text-slate-600">القيمة غير شاملة الضريبة: {formatSAR(product.unit_price)}</p>
-                      <p className="text-sm text-slate-600">القيمة شاملة الضريبة: {formatSAR(product.unit_price * 1.15)}</p>
-                      <p className="text-sm text-slate-600">المورد: {product.supplier_name || 'غير محدد'}</p>
+                  <div key={i} className="bg-slate-50 rounded-lg md:rounded-xl p-3 md:p-4 flex justify-between items-center">
+                    <div className="text-right min-w-0 flex-1">
+                      <p className="font-semibold text-slate-800 text-sm md:text-base truncate">{product.name}</p>
+                      <p className="text-xs md:text-sm text-slate-600">الكمية: {product.quantity}</p>
+                      <p className="text-xs md:text-sm text-slate-600">القيمة غير شاملة الضريبة: {formatSAR(product.unit_price)}</p>
+                      <p className="text-xs md:text-sm text-slate-600">القيمة شاملة الضريبة: {formatSAR(product.unit_price * 1.15)}</p>
+                      <p className="text-xs md:text-sm text-slate-600">المورد: {product.supplier_name || 'غير محدد'}</p>
                     </div>
-                    <div className="text-left">
-                      <p className="text-sm font-semibold text-slate-700">التكلفة: {formatSAR(product.cost_price)}</p>
+                    <div className="text-left flex-shrink-0 mr-2">
+                      <p className="text-xs md:text-sm font-semibold text-slate-700">التكلفة: {formatSAR(product.cost_price)}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="border-t pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl">
+            <div className="border-t pt-4 md:pt-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 text-center">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-3 md:p-4 rounded-lg md:rounded-xl">
                   <p className="text-xs text-indigo-600">الفرعي</p>
-                  <p className="text-lg font-bold text-indigo-700">{formatSAR(viewOrder.subtotal_before_tax)}</p>
+                  <p className="text-sm md:text-lg font-bold text-indigo-700">{formatSAR(viewOrder.subtotal_before_tax)}</p>
                 </div>
-                <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-4 rounded-xl">
+                <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-3 md:p-4 rounded-lg md:rounded-xl">
                   <p className="text-xs text-amber-600">الضريبة</p>
-                  <p className="text-lg font-bold text-amber-700">{formatSAR(viewOrder.tax_amount)}</p>
+                  <p className="text-sm md:text-lg font-bold text-amber-700">{formatSAR(viewOrder.tax_amount)}</p>
                 </div>
-                <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-xl">
+                <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-3 md:p-4 rounded-lg md:rounded-xl">
                   <p className="text-xs text-purple-600">الشحن</p>
-                  <p className="text-lg font-bold text-purple-700">{formatSAR(viewOrder.shipping_cost ?? 0, true)}</p>
+                  <p className="text-sm md:text-lg font-bold text-purple-700">{formatSAR(viewOrder.shipping_cost ?? 0, true)}</p>
                 </div>
-                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-4 rounded-xl">
+                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-3 md:p-4 rounded-lg md:rounded-xl">
                   <p className="text-xs text-emerald-600">الإجمالي</p>
-                  <p className="text-lg font-bold text-emerald-700">{formatSAR(viewOrder.total_price)}</p>
+                  <p className="text-sm md:text-lg font-bold text-emerald-700">{formatSAR(viewOrder.total_price)}</p>
                 </div>
               </div>
             </div>
-            <div className="flex justify-end mt-6">
+            <div className="flex justify-end mt-4 md:mt-6">
               <button
                 onClick={() => setViewOrder(null)}
-                className="px-6 py-3 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 font-medium min-h-[44px]"
+                className="px-4 md:px-6 py-2 md:py-3 bg-slate-200 text-slate-700 rounded-lg md:rounded-xl hover:bg-slate-300 font-medium text-sm md:text-base min-h-[44px]"
               >
                 إغلاق
               </button>
@@ -1691,14 +1691,14 @@ ${pastedText}
       )}
       {/* === مودال الإقفال / الحذف === */}
       {showBulkModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4">
+          <div className="bg-white rounded-xl md:rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
+            <div className="flex justify-between items-center mb-3 md:mb-4">
+              <h3 className="text-base md:text-xl font-bold">
                 {bulkAction === 'lock' ? 'إقفال الطلبات مع التكاليف والموردين' : 'حذف نهائي'}
               </h3>
               <button onClick={() => { setShowBulkModal(false); setTempCosts({}); setTempSuppliers({}); setTempShipping({}); setTempShippingBearer({}); setCurrentStep(0); setDeleteConfirmText(''); }}>
-                <X className="h-6 w-6 text-slate-500" />
+                <X className="h-5 w-5 md:h-6 md:w-6 text-slate-500" />
               </button>
             </div>
             {bulkAction === 'lock' ? (
