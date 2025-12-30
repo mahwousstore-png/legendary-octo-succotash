@@ -23,6 +23,10 @@ interface Expense {
   user_id?: string;
   balance_transaction_id?: string;
   deducted_from_custody?: boolean;
+  status?: 'pending' | 'approved' | 'rejected';
+  approved_by?: string;
+  approved_at?: string;
+  rejection_reason?: string;
 }
 
 interface Category {
@@ -401,10 +405,15 @@ const Expenses: React.FC = () => {
       } else {
         const createdBy = currentUser.full_name || currentUser.email || 'غير معروف';
         
+        // تحديد الحالة حسب دور المستخدم
+        const isAdmin = currentUser.role === 'admin';
+        const expenseStatus = isAdmin ? 'approved' : 'pending';
+        
         let balanceTransactionId = null;
 
-        // If deducting from custody, create a debit transaction
-        if (deductFromCustody) {
+        // If deducting from custody and user is admin, create debit transaction immediately
+        // For regular employees, the transaction will be created upon approval
+        if (deductFromCustody && isAdmin) {
           const { data: transaction, error: transactionError } = await supabase
             .from('employee_balance_transactions')
             .insert({
@@ -424,13 +433,16 @@ const Expenses: React.FC = () => {
           if (transactionError) throw transactionError;
           balanceTransactionId = transaction.id;
         }
-
+        
         const expenseToInsert = {
           ...expenseData,
           created_by: createdBy,
           user_id: currentUser.id,
           balance_transaction_id: balanceTransactionId,
-          deducted_from_custody: deductFromCustody
+          deducted_from_custody: deductFromCustody,
+          status: expenseStatus,
+          approved_by: isAdmin ? currentUser.id : null,
+          approved_at: isAdmin ? new Date().toISOString() : null
         };
 
         const { error } = await supabase
@@ -438,14 +450,19 @@ const Expenses: React.FC = () => {
           .insert([expenseToInsert]);
         if (error) throw error;
 
-        if (deductFromCustody) {
+        if (deductFromCustody && isAdmin) {
           const newBalance = employeeBalance - amount;
           toast.success(
             `تم خصم المصروف من عهدتك بنجاح. الرصيد المتبقي: ${newBalance.toLocaleString('EN-US')} ر.س`
           );
           await fetchEmployeeBalance();
         } else {
-          toast.success('تم إضافة المصروف بنجاح');
+          const message = isAdmin 
+            ? 'تم إضافة المصروف بنجاح' 
+            : deductFromCustody
+              ? 'تم إرسال المصروف للمراجعة. سيتم خصمه من عهدتك عند الموافقة'
+              : 'تم إرسال المصروف للمراجعة من المدير';
+          toast.success(message);
         }
       }
 
@@ -485,8 +502,104 @@ const Expenses: React.FC = () => {
         .eq('id', id);
       if (error) throw error;
       await fetchExpenses();
+      toast.success('تم حذف المصروف بنجاح');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ في حذف البيانات');
+      toast.error('فشل حذف المصروف');
+    }
+  };
+
+  const handleApproveExpense = async (expense: Expense) => {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser || currentUser.role !== 'admin') {
+      toast.error('هذه العملية متاحة للمدير فقط');
+      return;
+    }
+
+    try {
+      let balanceTransactionId = expense.balance_transaction_id;
+
+      // إذا كان المصروف مطلوب خصمه من العهدة ولم يتم خصمه بعد
+      if (expense.deducted_from_custody && !expense.balance_transaction_id && expense.user_id) {
+        // إنشاء معاملة خصم من العهدة
+        const { data: transaction, error: transactionError } = await supabase
+          .from('employee_balance_transactions')
+          .insert({
+            user_id: expense.user_id,
+            amount: -expense.amount, // Negative for debit
+            type: 'debit',
+            reason: `مصروف معتمد: ${expense.description}`,
+            transaction_date: expense.date,
+            created_by: currentUser.id,
+            status: 'confirmed',
+            confirmed_at: new Date().toISOString(),
+            confirmed_by: currentUser.id
+          })
+          .select()
+          .single();
+
+        if (transactionError) {
+          console.error('Error creating custody transaction:', transactionError);
+          toast.error('فشل خصم المبلغ من عهدة الموظف');
+          return;
+        }
+
+        balanceTransactionId = transaction.id;
+      }
+
+      const { error } = await supabase
+        .from('expenses')
+        .update({
+          status: 'approved',
+          approved_by: currentUser.id,
+          approved_at: new Date().toISOString(),
+          balance_transaction_id: balanceTransactionId
+        })
+        .eq('id', expense.id);
+      
+      if (error) throw error;
+      await fetchExpenses();
+      
+      const message = expense.deducted_from_custody 
+        ? 'تم الموافقة على المصروف وخصمه من عهدة الموظف'
+        : 'تم الموافقة على المصروف';
+      toast.success(message);
+    } catch (err) {
+      console.error('Error approving expense:', err);
+      toast.error('فشلت عملية الموافقة');
+    }
+  };
+
+  const handleRejectExpense = async (expense: Expense) => {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser || currentUser.role !== 'admin') {
+      toast.error('هذه العملية متاحة للمدير فقط');
+      return;
+    }
+
+    const reason = prompt('الرجاء إدخال سبب الرفض:');
+    if (!reason || reason.trim() === '') {
+      toast.error('يجب إدخال سبب الرفض');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .update({
+          status: 'rejected',
+          approved_by: currentUser.id,
+          approved_at: new Date().toISOString(),
+          rejection_reason: reason
+        })
+        .eq('id', expense.id);
+      
+      if (error) throw error;
+      await fetchExpenses();
+      toast.success('تم رفض المصروف');
+    } catch (err) {
+      console.error('Error rejecting expense:', err);
+      toast.error('فشلت عملية الرفض');
     }
   };
 
@@ -512,6 +625,14 @@ const Expenses: React.FC = () => {
     });
     return filtered;
   }, [periodFilteredExpenses, searchTerm, filterCategory]);
+
+  // فلتر المصروفات حسب الحالة
+  const approvedExpenses = filteredExpenses.filter(exp => exp.status === 'approved');
+  const pendingExpenses = filteredExpenses.filter(exp => exp.status === 'pending');
+  const rejectedExpenses = filteredExpenses.filter(exp => exp.status === 'rejected');
+  
+  const currentUser = authService.getCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
 
   if (loading) {
     return (
@@ -596,6 +717,56 @@ const Expenses: React.FC = () => {
         </div>
       </div>
 
+      {/* قسم المصروفات المعلقة - للمدير فقط */}
+      {isAdmin && pendingExpenses.length > 0 && (
+        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6 mb-6">
+          <div className="flex items-center mb-4">
+            <AlertCircle className="h-6 w-6 text-yellow-600 ml-2" />
+            <h3 className="text-xl font-bold text-yellow-800">
+              مصروفات بانتظار الموافقة ({pendingExpenses.length})
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {pendingExpenses.map(expense => (
+              <div key={expense.id} className="bg-white border border-yellow-200 rounded-lg p-4 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Tag className="h-4 w-4 text-gray-500" />
+                      <span className="font-bold text-gray-900">{expense.description}</span>
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                        {expense.category}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                      <span>المبلغ: <strong className="text-blue-600">{expense.amount.toLocaleString('EN-US')} ر.س</strong></span>
+                      <span>التاريخ: {formatNumericDate(expense.date)}</span>
+                      <span>بواسطة: {expense.created_by || 'غير معروف'}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApproveExpense(expense)}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      <span>موافقة</span>
+                    </button>
+                    <button
+                      onClick={() => handleRejectExpense(expense)}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse"
+                    >
+                      <X className="h-4 w-4" />
+                      <span>رفض</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1 relative">
@@ -635,7 +806,7 @@ const Expenses: React.FC = () => {
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">سجلات المصروفات</h3>
+          <h3 className="text-lg font-semibold text-gray-900">سجلات المصروفات المعتمدة</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -646,11 +817,12 @@ const Expenses: React.FC = () => {
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المبلغ</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">أنشأ بواسطة</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedExpenses.map((expense) => (
+              {approvedExpenses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((expense) => (
                 <tr key={expense.id} className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -677,6 +849,16 @@ const Expenses: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {expense.created_by || 'غير محدد'}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      معتمد
+                    </span>
+                    {expense.deducted_from_custody && (
+                      <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 mr-1">
+                        من العهدة
+                      </span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2 space-x-reverse">
                       <button
@@ -699,10 +881,10 @@ const Expenses: React.FC = () => {
           </table>
         </div>
 
-        {totalPages > 1 && (
+        {Math.ceil(approvedExpenses.length / itemsPerPage) > 1 && (
           <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
             <div className="text-sm text-gray-700">
-              عرض {(currentPage - 1) * itemsPerPage + 1} إلى {Math.min(currentPage * itemsPerPage, filteredExpenses.length)} من {filteredExpenses.length} مصروف
+              عرض {(currentPage - 1) * itemsPerPage + 1} إلى {Math.min(currentPage * itemsPerPage, approvedExpenses.length)} من {approvedExpenses.length} مصروف
             </div>
             <div className="flex items-center space-x-2 space-x-reverse">
               <button
@@ -712,7 +894,7 @@ const Expenses: React.FC = () => {
               >
                 السابق
               </button>
-              {[...Array(Math.min(5, totalPages))].map((_, i) => {
+              {[...Array(Math.min(5, Math.ceil(approvedExpenses.length / itemsPerPage)))].map((_, i) => {
                 const pageNum = i + 1;
                 return (
                   <button
@@ -728,8 +910,8 @@ const Expenses: React.FC = () => {
                 );
               })}
               <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(approvedExpenses.length / itemsPerPage), prev + 1))}
+                disabled={currentPage === Math.ceil(approvedExpenses.length / itemsPerPage)}
                 className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 التالي
