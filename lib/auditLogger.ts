@@ -38,30 +38,3 @@ export const logAction = async (data: AuditLogData): Promise<void> => {
     // لا نرمي خطأ لأن فشل التسجيل لا يجب أن يوقف العملية الأساسية
   }
 };
-
-// دوال مساعدة للموردين
-export const logSupplierLedgerCreated = (ledgerId: string, supplier: string, amount: number) => {
-  return logAction({
-    action: 'create',
-    resource_type: 'supplier_ledger',
-    resource_id: ledgerId,
-    details: { supplier, amount }
-  });
-};
-
-export const logSupplierPayment = (ledgerId: string, supplier: string, amount: number) => {
-  return logAction({
-    action: 'create',
-    resource_type: 'supplier_payment',
-    resource_id: ledgerId,
-    details: { supplier, amount }
-  });
-};
-
-export const logSupplierLedgerDeleted = (ledgerId: string) => {
-  return logAction({
-    action: 'delete',
-    resource_type: 'supplier_ledger',
-    resource_id: ledgerId
-  });
-};

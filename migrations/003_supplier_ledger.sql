@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS supplier_ledger (
   paid_amount NUMERIC(15,2) DEFAULT 0,        -- المبلغ المسدد
   remaining_amount NUMERIC(15,2) NOT NULL,    -- المبلغ المتبقي
   locked_by VARCHAR(255) NOT NULL,            -- من أقفل الطلب وأنشأ المستحق
-  locked_by_user_id UUID REFERENCES user_profiles(id),
+  locked_by_user_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS supplier_payments (
   ledger_id UUID REFERENCES supplier_ledger(id) ON DELETE CASCADE,
   paid_amount NUMERIC(15,2) NOT NULL,
   paid_by VARCHAR(255) NOT NULL,              -- اسم الموظف الذي سدد
-  paid_by_user_id UUID REFERENCES user_profiles(id),
-  balance_transaction_id UUID REFERENCES employee_balance_transactions(id),
+  paid_by_user_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
+  balance_transaction_id UUID REFERENCES employee_balance_transactions(id) ON DELETE CASCADE,
   payment_date TIMESTAMP DEFAULT NOW(),
   notes TEXT
 );

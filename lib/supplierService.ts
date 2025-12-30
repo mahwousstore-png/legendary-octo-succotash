@@ -166,10 +166,15 @@ export const paySupplierLedger = async (
     if (paymentError) {
       console.error('Error creating supplier payment:', paymentError);
       // Rollback: حذف transaction
-      await supabase
+      const { error: rollbackError } = await supabase
         .from('employee_balance_transactions')
         .delete()
         .eq('id', transaction.id);
+      
+      if (rollbackError) {
+        console.error('Error during rollback:', rollbackError);
+        // في حالة فشل الـ rollback، نسجل الخطأ لكن العملية فشلت على أي حال
+      }
       return { success: false, error: 'فشل تسجيل السداد' };
     }
 
@@ -187,15 +192,32 @@ export const paySupplierLedger = async (
 
     if (updateError) {
       console.error('Error updating supplier ledger:', updateError);
+      // Rollback: حذف السداد والـ transaction
+      await supabase
+        .from('supplier_payments')
+        .delete()
+        .eq('balance_transaction_id', transaction.id);
+      await supabase
+        .from('employee_balance_transactions')
+        .delete()
+        .eq('id', transaction.id);
+      return { success: false, error: 'فشل تحديث المستحق' };
     }
 
     // 6. تحديث رصيد الموظف
-    await supabase
+    const { error: balanceUpdateError } = await supabase
       .from('user_profiles')
       .update({
         current_balance: currentBalance - paymentAmount
       })
       .eq('id', currentUser.id);
+
+    if (balanceUpdateError) {
+      console.error('Error updating user balance:', balanceUpdateError);
+      // Note: في هذه الحالة، العملية تمت بنجاح في الجداول الأخرى
+      // لكن فشل تحديث الرصيد في user_profiles
+      // يمكن ترك الرصيد كما هو لأنه سيتم حسابه من الـ transactions
+    }
 
     // 7. تسجيل في Audit Log
     await logAction({
