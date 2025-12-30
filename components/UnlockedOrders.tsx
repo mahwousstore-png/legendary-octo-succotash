@@ -13,6 +13,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { supabase } from '../lib/supabase'; // افتراض: إضافة import لـ supabase للعمليات
 import { authService } from '../lib/auth'; // إضافة: استيراد authService للتحقق من الصلاحيات
+import { formatDateTime } from '../lib/dateFormatter'; // استيراد دالة formatDateTime المركزية
 // إضافة: API Key للـ AI (يجب تعيينه في environment variables كـ VITE_ATLASCLOUD_API_KEY)
 const ATLASCLOUD_API_KEY = import.meta.env.VITE_ATLASCLOUD_API_KEY || '';
 const NewOrders: React.FC = () => {
@@ -160,15 +161,6 @@ const NewOrders: React.FC = () => {
     return `ر.س ${num.toLocaleString('EN-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
   // تنسيق التاريخ والوقت بالتوقيت السعودي (UTC+3)
-  const formatDateTime = (dateString: string) => {
-    const [datePart, timePart] = dateString.split('T');
-    const [year, month, day] = datePart.split('-');
-    const [hour, minute] = timePart.substring(0, 5).split(':');
-    let h = parseInt(hour, 10);
-    const period = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    return `${day}/${month}/${year} - ${h.toString().padStart(2, '0')}:${minute} ${period}`;
-  };
   // تحويل طريقة الدفع
   const getPaymentMethodLabel = (method: string | undefined) => {
     if (!method) return 'غير مسجل';

@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { useOrders } from '../hooks/useOrders';
 import { authService } from '../lib/auth';
 import toast, { Toaster } from 'react-hot-toast';
+import { formatDateTime } from '../lib/dateFormatter'; // استيراد دالة formatDateTime المركزية
 interface PaymentMethod {
   id: string;
   name: string;
@@ -597,15 +598,11 @@ const formatCurrency = (v: number): string => {
   })} ر.س`;
 };
 
-// دالة تنسيق التاريخ
-const formatDate = (dateString: string): string => {
+// دالة تنسيق التاريخ - استخدام دالة آمنة
+const formatDateSafe = (dateString: string): string => {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return 'غير محدد';
-  return date.toLocaleDateString('ar-SA', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  return formatDateTime(date);
 };
 
 // دالة مساعدة لجلب اسم المستخدم
@@ -745,7 +742,7 @@ const getUserName = (userId: string): string => {
                           </span>
                         </div>
                         <p className="text-xs text-gray-600">دفع يدوي</p>
-                        <p className="text-xs text-gray-500">{formatDate(r.receipt_date)}</p>
+                        <p className="text-xs text-gray-500">{formatDateSafe(r.receipt_date)}</p>
                         {r.notes && (
                           <p className="text-xs text-gray-700 mt-1 italic">"{r.notes}"</p>
                         )}
@@ -1012,7 +1009,7 @@ const getUserName = (userId: string): string => {
                             #{t.id.slice(-6)}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-600">{formatDate(t.transaction_date)}</p>
+                        <p className="text-xs text-gray-600">{formatDateSafe(t.transaction_date)}</p>
                         {t.reason && (
                           <p className="text-xs text-gray-700 mt-1 italic">"{t.reason}"</p>
                         )}

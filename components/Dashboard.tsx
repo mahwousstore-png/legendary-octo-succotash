@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { DollarSign, TrendingUp, Package, Truck } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
 import { useOrders } from '../hooks/useOrders';
 import { createClient } from '@supabase/supabase-js';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { formatDateTime, getDateRangeByPeriod, getPeriodLabel } from '../lib/dateFormatter';
 
 // إنشاء Supabase Client مرة واحدة فقط خارج المكون
 const supabase = createClient(
@@ -27,6 +28,19 @@ const queryClient = new QueryClient({
 // Wrapper لتوفير QueryClient للمكون الداخلي
 const DashboardContent: React.FC = () => {
   const { orders, stats, loading: ordersLoading, error: ordersError } = useOrders();
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('current_month');
+
+  // حساب نطاق التاريخ حسب الفترة المختارة
+  const periodRange = useMemo(() => getDateRangeByPeriod(selectedPeriod), [selectedPeriod]);
+
+  // تصفية الطلبات حسب الفترة المختارة
+  const filteredOrders = useMemo(() => {
+    if (selectedPeriod === 'all_time') return orders;
+    return orders.filter((order: any) => {
+      const orderDate = new Date(order.order_date || order.created_at);
+      return orderDate >= new Date(periodRange.start) && orderDate <= new Date(periodRange.end);
+    });
+  }, [orders, selectedPeriod, periodRange]);
 
   // جلب طرق الدفع
   const { data: paymentMethods = [], isLoading: pmLoading } = useQuery({
@@ -79,8 +93,8 @@ const DashboardContent: React.FC = () => {
   };
 
   const lockedOrders = useMemo(() =>
-    orders.filter((order: any) => order.is_locked === true),
-    [orders]
+    filteredOrders.filter((order: any) => order.is_locked === true),
+    [filteredOrders]
   );
 
   const totalSales = useMemo(() =>
@@ -99,18 +113,18 @@ const DashboardContent: React.FC = () => {
   );
 
   const openOrdersCount = useMemo(() =>
-    orders.filter((o: any) => !o.is_locked && o.status !== 'ملغي').length,
-    [orders]
+    filteredOrders.filter((o: any) => !o.is_locked && o.status !== 'ملغي').length,
+    [filteredOrders]
   );
 
   const lockedOrdersCount = useMemo(() =>
-    orders.filter((o: any) => o.is_locked).length,
-    [orders]
+    filteredOrders.filter((o: any) => o.is_locked).length,
+    [filteredOrders]
   );
 
   const cancelledOrdersCount = useMemo(() =>
-    orders.filter((o: any) => o.status === 'ملغي').length,
-    [orders]
+    filteredOrders.filter((o: any) => o.status === 'ملغي').length,
+    [filteredOrders]
   );
 
   const totalShippingCosts = useMemo(() =>
@@ -214,6 +228,30 @@ const DashboardContent: React.FC = () => {
         <div>
           <h1 className="text-xl md:text-3xl font-bold text-royal-900">لوحة التحكم المالية</h1>
           <p className="text-sm md:text-base text-royal-400">نظرة شاملة على الأداء المالي</p>
+        </div>
+      </div>
+
+      {/* فلتر الفترة الزمنية */}
+      <div className="bg-white rounded-xl p-4 border border-beige-200 shadow-md">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <label className="font-semibold text-royal-900">عرض البيانات:</label>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 md:flex-none">
+            <select 
+              value={selectedPeriod} 
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="px-4 py-2 border border-beige-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 bg-white text-royal-900"
+            >
+              <option value="current_month">الشهر الحالي</option>
+              <option value="last_month">الشهر الماضي</option>
+              <option value="last_3_months">آخر 3 أشهر</option>
+              <option value="current_year">السنة الحالية</option>
+              <option value="all_time">كل الفترات</option>
+            </select>
+            
+            <div className="text-sm text-royal-600 bg-gold-50 px-4 py-2 rounded-lg border border-gold-200">
+              <span className="font-medium">الفترة:</span> {formatDateTime(new Date(periodRange.start))} - {formatDateTime(new Date(periodRange.end))}
+            </div>
+          </div>
         </div>
       </div>
 
