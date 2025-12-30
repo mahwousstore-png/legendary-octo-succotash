@@ -16,6 +16,7 @@ import {
   Package,
   X,
   Truck,
+  Shield,
 } from 'lucide-react';
 
 import Dashboard from './components/Dashboard';
@@ -67,7 +68,7 @@ function App() {
     { id: 'inventory', label: 'المخزون', icon: Package, category: 'financial' },
     { id: 'reports', label: 'التقارير', icon: FileText, category: 'main' },
     { id: 'custom-reports', label: 'التقارير المخصصة', icon: FileText, category: 'main' },
-    { id: 'audit-logs', label: 'سجل الأحداث', icon: FileText, category: 'admin' },
+    { id: 'audit-logs', label: 'سجل الأحداث', icon: Shield, category: 'admin' },
     { id: 'users', label: 'إدارة المستخدمين', icon: Users, category: 'admin' },
   ];
 
