@@ -202,7 +202,19 @@ const AuditLogs: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {log.details && Object.keys(log.details).length > 0 ? (
-                        <pre className="text-xs">{JSON.stringify(log.details, null, 2)}</pre>
+                        <div className="max-w-xs">
+                          {log.details.amount !== undefined && (
+                            <span className="text-xs">المبلغ: {log.details.amount}</span>
+                          )}
+                          {Object.keys(log.details).length > 0 && (
+                            <details className="cursor-pointer">
+                              <summary className="text-xs text-blue-600">عرض التفاصيل</summary>
+                              <pre className="text-xs mt-1 p-2 bg-gray-50 rounded overflow-auto max-h-20">
+                                {JSON.stringify(log.details, null, 2)}
+                              </pre>
+                            </details>
+                          )}
+                        </div>
                       ) : (
                         '-'
                       )}

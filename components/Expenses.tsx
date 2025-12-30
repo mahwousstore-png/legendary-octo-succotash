@@ -430,7 +430,7 @@ const Expenses: React.FC = () => {
           .from('expenses')
           .insert([expenseToInsert])
           .select()
-          .single();
+          .maybeSingle();
         
         if (error) throw error;
         
