@@ -7,6 +7,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { formatDateTime } from '../lib/dateFormatter'; // استيراد دالة formatDateTime المركزية
 
 interface Expense {
   id: string;
@@ -66,21 +67,6 @@ const Expenses: React.FC = () => {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
-    });
-    return formatter.format(date);
-  };
-
-  const formatDateTime = (date: Date) => {
-    const formatter = new Intl.DateTimeFormat('ar-SA', {
-      calendar: 'gregory',
-      timeZone: 'Asia/Riyadh',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
     });
     return formatter.format(date);
   };
@@ -230,7 +216,7 @@ const Expenses: React.FC = () => {
         expense.description,
         expense.category,
         `${expense.amount.toLocaleString('EN-US')} ر.س`,
-        formatNumericDate(expense.date)
+        formatDateTime(expense.date)
       ]);
       totalAmount += expense.amount;
       row.eachCell((cell, colNumber) => {
@@ -295,7 +281,7 @@ const Expenses: React.FC = () => {
           expense.description,
           expense.category,
           `${expense.amount.toLocaleString('EN-US')} ر.س`,
-          formatNumericDate(expense.date)
+          formatDateTime(expense.date)
         ]);
         catTotal += expense.amount;
         row.eachCell((cell, colNumber) => {
@@ -755,7 +741,7 @@ const Expenses: React.FC = () => {
                     {expense.amount.toLocaleString('EN-US')} ر.س
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {formatNumericDate(expense.date)}
+                    {formatDateTime(expense.date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {expense.created_by || 'غير محدد'}
@@ -1175,7 +1161,7 @@ const Expenses: React.FC = () => {
                               <td className="border border-gray-300 px-4 py-3 text-right font-bold text-blue-700">
                                 {expense.amount.toLocaleString('EN-US')} ر.س
                               </td>
-                              <td className="border border-gray-300 px-4 py-3">{formatNumericDate(expense.date)}</td>
+                              <td className="border border-gray-300 px-4 py-3">{formatDateTime(expense.date)}</td>
                             </tr>
                           ))}
                         </tbody>

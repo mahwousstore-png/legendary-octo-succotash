@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { formatDate as formatDateOnly, formatDateTime } from './dateFormatter';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -18,15 +19,9 @@ export const formatCurrency = (value: number): string => {
   })} ر.س`;
 };
 
-export const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('ar-SA', {
-    calendar: 'gregory',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  }).format(date);
-};
+// Re-export for backward compatibility
+export const formatDate = formatDateOnly;
+export { formatDateTime };
 
 interface ExcelExportOptions {
   fileName: string;
@@ -59,7 +54,7 @@ export const exportToExcel = async (options: ExcelExportOptions) => {
 
   worksheet.mergeCells(currentRow, 1, currentRow, headers.length);
   const dateCell = worksheet.getCell(currentRow, 1);
-  dateCell.value = `تاريخ التقرير: ${formatDate(new Date().toISOString())}`;
+  dateCell.value = `تاريخ التقرير: ${formatDateTime(new Date())}`;
   dateCell.font = { size: 12, italic: true };
   dateCell.alignment = { horizontal: 'center' };
   currentRow++;
@@ -141,7 +136,7 @@ export const exportToPDF = (options: PDFExportOptions) => {
 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.text(`تاريخ التقرير: ${formatDate(new Date().toISOString())}`, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+  doc.text(`تاريخ التقرير: ${formatDateTime(new Date())}`, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
   yPosition += 10;
 
   if (summary && summary.length > 0) {

@@ -10,6 +10,7 @@ import * as XLSX from 'xlsx';
 import { authService } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import { formatDateTime } from '../lib/dateFormatter'; // استيراد دالة formatDateTime المركزية
 
 interface PaymentMethod {
   id: string;
@@ -92,16 +93,6 @@ const LockedOrders: React.FC = () => {
     };
     fetchPaymentMethods();
   }, []);
-
-  const formatDateTime = (dateString: string) => {
-    const [datePart, timePart] = dateString.split('T');
-    const [year, month, day] = datePart.split('-');
-    const [hour, minute] = timePart.substring(0, 5).split(':');
-    let h = parseInt(hour, 10);
-    const period = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    return `${day}/${month}/${year} - ${h.toString().padStart(2, '0')}:${minute} ${period}`;
-  };
 
   const getPaymentMethodLabel = (method: string | undefined) => {
     if (!method) return 'غير محدد';

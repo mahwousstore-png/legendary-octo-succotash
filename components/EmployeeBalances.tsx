@@ -9,6 +9,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { formatDateTime } from '../lib/dateFormatter'; // استيراد دالة formatDateTime المركزية
 
 interface UserProfile {
   id: string;
@@ -335,14 +336,10 @@ const EmployeeAdvances: React.FC = () => {
     })} ر.س`;
   };
 
-  const formatDate = (dateString: string): string => {
+  const formatDateSafe = (dateString: string): string => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'غير محدد';
-    return date.toLocaleDateString('en-US', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
+    return formatDateTime(date);
   };
 
   const [suppliersReceivables, setSuppliersReceivables] = useState<number>(0);
@@ -391,7 +388,7 @@ const EmployeeAdvances: React.FC = () => {
 
     worksheet.mergeCells('A2:D2');
     const dateCell = worksheet.getCell('A2');
-    dateCell.value = `تاريخ التقرير: ${formatDate(new Date().toISOString())}`;
+    dateCell.value = `تاريخ التقرير: ${formatDateTime(new Date())}`;
     dateCell.font = { size: 12, italic: true };
     dateCell.alignment = { horizontal: 'center' };
 
@@ -417,7 +414,7 @@ const EmployeeAdvances: React.FC = () => {
 
     selectedEmployee.transactions.forEach((t, index) => {
       const row = worksheet.addRow([
-        formatDate(t.transaction_date),
+        formatDateSafe(t.transaction_date),
         t.type === 'credit' ? 'صرف عهده' : 'تسوية عهده',
         Math.abs(t.amount).toFixed(2),
         t.reason || '-'
@@ -683,7 +680,7 @@ const EmployeeAdvances: React.FC = () => {
                           #{t.id.slice(-6)}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-600">{formatDate(t.transaction_date)}</p>
+                      <p className="text-xs text-gray-600">{formatDateSafe(t.transaction_date)}</p>
                       {t.reason && (
                         <p className="text-xs text-gray-700 mt-1 italic">"{t.reason}"</p>
                       )}
@@ -831,7 +828,7 @@ const EmployeeAdvances: React.FC = () => {
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
                       تقرير عهدة الموظف: {user.full_name}
                     </h1>
-                    <p className="text-gray-600">تاريخ التقرير: {formatDate(new Date().toISOString())}</p>
+                    <p className="text-gray-600">تاريخ التقرير: {formatDateTime(new Date())}</p>
                   </div>
 
                   <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-6 mb-8 text-center">
@@ -854,7 +851,7 @@ const EmployeeAdvances: React.FC = () => {
                     <tbody>
                       {transactions.map((t, index) => (
                         <tr key={t.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                          <td className="border border-gray-300 px-4 py-3">{formatDate(t.transaction_date)}</td>
+                          <td className="border border-gray-300 px-4 py-3">{formatDateSafe(t.transaction_date)}</td>
                           <td className="border border-gray-300 px-4 py-3">
                             <span className={`font-medium ${t.type === 'credit' ? 'text-amber-700' : 'text-red-700'}`}>
                               {t.type === 'credit' ? 'صرف عهدة' : 'تسوية عهدة'}
