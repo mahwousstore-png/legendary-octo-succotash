@@ -14,6 +14,7 @@ import { saveAs } from 'file-saver';
 import { supabase } from '../lib/supabase'; // افتراض: إضافة import لـ supabase للعمليات
 import { authService } from '../lib/auth'; // إضافة: استيراد authService للتحقق من الصلاحيات
 import { formatDateTime } from '../lib/dateFormatter'; // استيراد دالة formatDateTime المركزية
+import { createSupplierLedger } from '../lib/supplierService'; // استيراد خدمة مستحقات الموردين
 // إضافة: API Key للـ AI (يجب تعيينه في environment variables كـ VITE_ATLASCLOUD_API_KEY)
 const ATLASCLOUD_API_KEY = import.meta.env.VITE_ATLASCLOUD_API_KEY || '';
 const NewOrders: React.FC = () => {
@@ -476,7 +477,7 @@ const NewOrders: React.FC = () => {
           .from('receivables')
           .delete()
           .ilike('description', `طلب #${order.order_number}%`);
-        // إنشاء مستحق جديد لكل مورد + ربط receivable_id
+        // إنشاء مستحق جديد لكل مورد + ربط receivable_id + إضافة للموردين Ledger
         for (const [supplierId, { cost, productIds }] of Object.entries(supplierMap)) {
           const productNames = order.products
             ?.filter(p => productIds.includes(p.id))
@@ -508,6 +509,25 @@ const NewOrders: React.FC = () => {
             if (linkError) {
               console.error('فشل ربط receivable_id:', linkError);
             }
+          }
+          
+          // إضافة: إنشاء مستحق في جدول supplier_ledger
+          try {
+            const supplier = entities.find(e => e.id === supplierId);
+            const supplierName = supplier?.name || 'مورد غير معروف';
+            
+            const ledgerResult = await createSupplierLedger({
+              supplier_name: supplierName,
+              order_id: order.order_number,
+              product_details: productNames,
+              amount: parseFloat(cost.toFixed(2))
+            });
+            
+            if (!ledgerResult.success) {
+              console.error('فشل إنشاء مستحق المورد في Ledger:', ledgerResult.error);
+            }
+          } catch (ledgerError) {
+            console.error('خطأ في إنشاء مستحق المورد:', ledgerError);
           }
         }
       }
