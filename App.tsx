@@ -13,7 +13,6 @@ import {
   Users2,
   CreditCard,
   Wallet,
-  Loader2,
   Package,
   X,
   Truck,
