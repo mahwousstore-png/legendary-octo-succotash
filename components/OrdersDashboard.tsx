@@ -1,10 +1,42 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { ShoppingCart, Users, DollarSign, Clock, CheckCircle, Package } from 'lucide-react';
 import { useOrders } from '../hooks/useOrders';
 import { Order } from '../types/order';
+import PeriodFilter from './PeriodFilter';
+import { filterByPeriod } from '../lib/periodHelper';
 
 const OrdersDashboard: React.FC = () => {
   const { orders, stats, loading, error } = useOrders();
+  
+  // Period filter state
+  const [selectedPeriod, setSelectedPeriod] = useState('current_month');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+
+  // Filter orders by period
+  const filteredOrders = useMemo(() => {
+    return filterByPeriod(orders, selectedPeriod, customStartDate, customEndDate);
+  }, [orders, selectedPeriod, customStartDate, customEndDate]);
+
+  // Calculate filtered stats
+  const filteredStats = useMemo(() => {
+    const total_orders = filteredOrders.length;
+    const total_revenue = filteredOrders.reduce((sum, o) => sum + (o.total_price || 0), 0);
+    const pending_orders = filteredOrders.filter(o => !o.is_locked && o.status !== 'ملغي').length;
+    const completed_orders = filteredOrders.filter(o => o.is_locked).length;
+    const unlocked_orders = filteredOrders.filter(o => !o.is_locked).length;
+    const average_order_value = total_orders > 0 ? total_revenue / total_orders : 0;
+
+    return {
+      total_orders,
+      total_revenue,
+      pending_orders,
+      completed_orders,
+      unlocked_orders,
+      average_order_value,
+      locked_orders: completed_orders
+    };
+  }, [filteredOrders]);
 
   if (loading) {
     return (
@@ -38,38 +70,38 @@ const OrdersDashboard: React.FC = () => {
   const statsCards = [
     {
       title: 'إجمالي الطلبات',
-      value: stats.total_orders.toString(),
+      value: filteredStats.total_orders.toString(),
       icon: ShoppingCart,
       color: 'blue',
       change: '+12%'
     },
     {
       title: 'إجمالي الإيرادات',
-      value: `${stats.total_revenue.toLocaleString('EN-US')} ر.س`,
+      value: `${filteredStats.total_revenue.toLocaleString('EN-US')} ر.س`,
       icon: DollarSign,
       color: 'green',
       change: '+18%'
     },
     {
       title: 'طلبات معلقة',
-      value: stats.pending_orders.toString(),
+      value: filteredStats.pending_orders.toString(),
       icon: Clock,
       color: 'orange',
       change: '-5%'
     },
     {
       title: 'طلبات مكتملة',
-      value: stats.completed_orders.toString(),
+      value: filteredStats.completed_orders.toString(),
       icon: CheckCircle,
       color: 'purple',
       change: '+22%'
     },
     {
       title: 'طلبات غير مقفلة',
-      value: stats.unlocked_orders.toString(),
+      value: filteredStats.unlocked_orders.toString(),
       icon: Clock,
       color: 'orange',
-      change: `${stats.unlocked_orders > 0 ? '+' : ''}${stats.unlocked_orders}`
+      change: `${filteredStats.unlocked_orders > 0 ? '+' : ''}${filteredStats.unlocked_orders}`
     }
   ];
 
@@ -102,6 +134,18 @@ const OrdersDashboard: React.FC = () => {
         <p className="text-gray-600">إدارة ومتابعة جميع الطلبات الواردة</p>
       </div>
 
+      {/* Period Filter */}
+      <PeriodFilter
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+        onCustomDateChange={(start, end) => {
+          setCustomStartDate(start);
+          setCustomEndDate(end);
+        }}
+      />
+
       {/* إحصائيات سريعة */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         {statsCards.map((stat, index) => {
@@ -129,7 +173,7 @@ const OrdersDashboard: React.FC = () => {
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">متوسط قيمة الطلب</h3>
             <p className="text-3xl font-bold text-blue-600">
-              {stats.average_order_value.toLocaleString('EN-US', { 
+              {filteredStats.average_order_value.toLocaleString('EN-US', { 
                 minimumFractionDigits: 2, 
                 maximumFractionDigits: 2 
               })} ر.س
@@ -145,7 +189,7 @@ const OrdersDashboard: React.FC = () => {
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">آخر الطلبات</h3>
         <div className="space-y-4">
-          {orders.slice(0, 10).map((order: Order) => (
+          {filteredOrders.slice(0, 10).map((order: Order) => (
             <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-150">
               <div className="flex items-center space-x-4 space-x-reverse">
                 <div className="bg-blue-100 text-blue-600 p-2 rounded-lg">

@@ -1,9 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { DollarSign, TrendingUp, Package, Truck } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
 import { useOrders } from '../hooks/useOrders';
 import { createClient } from '@supabase/supabase-js';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import PeriodFilter from './PeriodFilter';
+import { filterByPeriod } from '../lib/periodHelper';
 
 // إنشاء Supabase Client مرة واحدة فقط خارج المكون
 const supabase = createClient(
@@ -28,6 +30,11 @@ const queryClient = new QueryClient({
 const DashboardContent: React.FC = () => {
   const { orders, stats, loading: ordersLoading, error: ordersError } = useOrders();
 
+  // Period filter state
+  const [selectedPeriod, setSelectedPeriod] = useState('current_month');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+
   // جلب طرق الدفع
   const { data: paymentMethods = [], isLoading: pmLoading } = useQuery({
     queryKey: ['payment_methods'],
@@ -42,23 +49,31 @@ const DashboardContent: React.FC = () => {
   });
 
   // جلب المصروفات (آخر 30 يوم)
-  const { data: expenses = [], isLoading: expensesLoading } = useQuery({
-    queryKey: ['expenses', 'last30days'],
+  const { data: allExpenses = [], isLoading: expensesLoading } = useQuery({
+    queryKey: ['expenses'],
     queryFn: async () => {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const { data, error } = await supabase
         .from('expenses')
-        .select('amount')
-        .gte('date', thirtyDaysAgo.toISOString().split('T')[0]);
+        .select('amount, date')
+        .order('date', { ascending: false });
       if (error) throw error;
       return data || [];
     },
   });
 
+  // Filter orders by period
+  const filteredOrders = useMemo(() => {
+    return filterByPeriod(orders, selectedPeriod, customStartDate, customEndDate);
+  }, [orders, selectedPeriod, customStartDate, customEndDate]);
+
+  // Filter expenses by period
+  const filteredExpenses = useMemo(() => {
+    return filterByPeriod(allExpenses, selectedPeriod, customStartDate, customEndDate);
+  }, [allExpenses, selectedPeriod, customStartDate, customEndDate]);
+
   const totalOtherExpenses = useMemo(() => {
-    return expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
-  }, [expenses]);
+    return filteredExpenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+  }, [filteredExpenses]);
 
   const getPaymentFee = (paymentMethodCode: string | null | undefined, totalPrice: number): number => {
     if (!paymentMethodCode || !totalPrice) return 0;
@@ -79,8 +94,8 @@ const DashboardContent: React.FC = () => {
   };
 
   const lockedOrders = useMemo(() =>
-    orders.filter((order: any) => order.is_locked === true),
-    [orders]
+    filteredOrders.filter((order: any) => order.is_locked === true),
+    [filteredOrders]
   );
 
   const totalSales = useMemo(() =>
@@ -99,18 +114,18 @@ const DashboardContent: React.FC = () => {
   );
 
   const openOrdersCount = useMemo(() =>
-    orders.filter((o: any) => !o.is_locked && o.status !== 'ملغي').length,
-    [orders]
+    filteredOrders.filter((o: any) => !o.is_locked && o.status !== 'ملغي').length,
+    [filteredOrders]
   );
 
   const lockedOrdersCount = useMemo(() =>
-    orders.filter((o: any) => o.is_locked).length,
-    [orders]
+    filteredOrders.filter((o: any) => o.is_locked).length,
+    [filteredOrders]
   );
 
   const cancelledOrdersCount = useMemo(() =>
-    orders.filter((o: any) => o.status === 'ملغي').length,
-    [orders]
+    filteredOrders.filter((o: any) => o.status === 'ملغي').length,
+    [filteredOrders]
   );
 
   const totalShippingCosts = useMemo(() =>
@@ -216,6 +231,18 @@ const DashboardContent: React.FC = () => {
           <p className="text-sm md:text-base text-royal-400">نظرة شاملة على الأداء المالي</p>
         </div>
       </div>
+
+      {/* Period Filter */}
+      <PeriodFilter
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+        onCustomDateChange={(start, end) => {
+          setCustomStartDate(start);
+          setCustomEndDate(end);
+        }}
+      />
 
       {/* إحصائيات أعداد الطلبات */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">

@@ -6,6 +6,8 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import PeriodFilter from './PeriodFilter';
+import { filterByPeriod } from '../lib/periodHelper';
 
 interface Expense {
   id: string;
@@ -36,9 +38,9 @@ const Expenses: React.FC = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [dateFilter, setDateFilter] = useState('all');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [selectedPeriod, setSelectedPeriod] = useState('current_month');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -340,40 +342,14 @@ const Expenses: React.FC = () => {
       const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         expense.category.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = filterCategory === 'all' || expense.category === filterCategory;
-
-      const expenseDate = new Date(expense.date);
-      let matchesDate = true;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const lastWeek = new Date(today);
-      lastWeek.setDate(lastWeek.getDate() - 7);
-
-      switch (dateFilter) {
-        case 'today':
-          matchesDate = expenseDate.toDateString() === today.toDateString();
-          break;
-        case 'yesterday':
-          matchesDate = expenseDate.toDateString() === yesterday.toDateString();
-          break;
-        case 'last_week':
-          matchesDate = expenseDate >= lastWeek && expenseDate <= today;
-          break;
-        case 'custom':
-          const from = fromDate ? new Date(fromDate) : null;
-          const to = toDate ? new Date(toDate) : null;
-          if (from && to) {
-            matchesDate = expenseDate >= from && expenseDate <= to;
-          }
-          break;
-        default:
-          matchesDate = true;
-      }
-      return matchesSearch && matchesCategory && matchesDate;
+      return matchesSearch && matchesCategory;
     });
+
+    // Apply period filter
+    filtered = filterByPeriod(filtered, selectedPeriod, customStartDate, customEndDate);
+    
     return filtered;
-  }, [expenses, searchTerm, filterCategory, dateFilter, fromDate, toDate]);
+  }, [expenses, searchTerm, filterCategory, selectedPeriod, customStartDate, customEndDate]);
 
   const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
   const paginatedExpenses = filteredExpenses.slice(
@@ -474,14 +450,6 @@ const Expenses: React.FC = () => {
     };
   };
 
-  useEffect(() => {
-    if (dateFilter === 'last_week') {
-      const dates = getLastWeekDates();
-      setFromDate(dates.from);
-      setToDate(dates.to);
-    }
-  }, [dateFilter]);
-
   if (loading) {
     return (
       <div className="p-6 min-h-screen bg-gray-50">
@@ -546,6 +514,18 @@ const Expenses: React.FC = () => {
         </div>
       </div>
 
+      {/* Period Filter */}
+      <PeriodFilter
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+        onCustomDateChange={(start, end) => {
+          setCustomStartDate(start);
+          setCustomEndDate(end);
+        }}
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-8">
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
@@ -587,42 +567,6 @@ const Expenses: React.FC = () => {
                 <option key={cat.id} value={cat.name}>{cat.name}</option>
               ))}
             </select>
-            <select
-              value={dateFilter}
-              onChange={(e) => {
-                setDateFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">جميع التواريخ</option>
-              <option value="today">اليوم</option>
-              <option value="yesterday">أمس</option>
-              <option value="last_week">آخر أسبوع</option>
-              <option value="custom">تاريخ مخصص</option>
-            </select>
-            {dateFilter === 'custom' && (
-              <div className="flex gap-2">
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <span className="text-gray-500 self-center">-</span>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            )}
-            {dateFilter === 'last_week' && (
-              <span className="text-sm text-gray-500 self-center px-2">
-                من {formatNumericDate(getLastWeekDates().from)} إلى {formatNumericDate(getLastWeekDates().to)}
-              </span>
-            )}
             <button
               onClick={() => setShowPreview(true)}
               className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse"

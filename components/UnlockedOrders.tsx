@@ -13,6 +13,8 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { supabase } from '../lib/supabase'; // افتراض: إضافة import لـ supabase للعمليات
 import { authService } from '../lib/auth'; // إضافة: استيراد authService للتحقق من الصلاحيات
+import PeriodFilter from './PeriodFilter';
+import { filterByPeriod } from '../lib/periodHelper';
 // إضافة: API Key للـ AI (يجب تعيينه في environment variables كـ VITE_ATLASCLOUD_API_KEY)
 const ATLASCLOUD_API_KEY = import.meta.env.VITE_ATLASCLOUD_API_KEY || '';
 const NewOrders: React.FC = () => {
@@ -29,6 +31,12 @@ const NewOrders: React.FC = () => {
     updateOrderTotals // ← هذا السطر الجديد المهم جدًا
   } = useOrders();
   const { entities, addReceivable, addEntity } = useReceivables();
+  
+  // Period filter state
+  const [selectedPeriod, setSelectedPeriod] = useState('current_month');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -188,29 +196,28 @@ const NewOrders: React.FC = () => {
     return map[method] || method;
   };
   // فلترة + ترتيب من الأحدث إلى الأقدم (استثناء الملغيات من التحديد، لكن عرضها)
-  const filteredOrders = orders
-    .filter(order => order.is_locked === false)
-    .filter(order => {
-      // فلتر الحالة
-      if (filterStatus !== 'all' && order.status !== filterStatus) return false;
-      // فلتر بوابة الدفع
-      if (filterPayment !== 'all' && order.payment_method !== filterPayment) return false;
-      // فلتر شركة الشحن
-      if (filterShipping !== 'all' && order.shipping_company !== filterShipping) return false;
-      // فلتر التاريخ
-      if (fromDate || toDate) {
-        const orderDate = new Date(order.order_date).toISOString().split('T')[0];
-        if (fromDate && orderDate < fromDate) return false;
-        if (toDate && orderDate > toDate) return false;
-      }
-      if (!searchTerm) return true;
-      const term = searchTerm.toLowerCase();
-      const name = (order.customer_name || '').toLowerCase();
-      const phone = (order.phone_number || '').toString();
-      const number = (order.order_number || '').toString().toLowerCase();
-      return name.includes(term) || phone.includes(term) || number.includes(term);
-    })
-    .sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
+  const filteredOrders = filterByPeriod(
+    orders
+      .filter(order => order.is_locked === false)
+      .filter(order => {
+        // فلتر الحالة
+        if (filterStatus !== 'all' && order.status !== filterStatus) return false;
+        // فلتر بوابة الدفع
+        if (filterPayment !== 'all' && order.payment_method !== filterPayment) return false;
+        // فلتر شركة الشحن
+        if (filterShipping !== 'all' && order.shipping_company !== filterShipping) return false;
+        // فلتر البحث
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+        const name = (order.customer_name || '').toLowerCase();
+        const phone = (order.phone_number || '').toString();
+        const number = (order.order_number || '').toString().toLowerCase();
+        return name.includes(term) || phone.includes(term) || number.includes(term);
+      }),
+    selectedPeriod,
+    customStartDate,
+    customEndDate
+  ).sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * itemsPerPage,
@@ -1256,10 +1263,23 @@ ${pastedText}
           </button>
         </div>
       </div>
+      
+      {/* Period Filter */}
+      <PeriodFilter
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+        onCustomDateChange={(start, end) => {
+          setCustomStartDate(start);
+          setCustomEndDate(end);
+        }}
+      />
+      
       {/* === شريط البحث والفلاتر === */}
       <div className="bg-white rounded-xl md:rounded-2xl shadow-md border border-slate-100 overflow-hidden mb-4 md:mb-6">
         <div className="p-3 md:p-5 lg:p-7">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 items-end">
             <div className="relative col-span-1 sm:col-span-2">
               <Search className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4 md:h-5 md:w-5" />
               <input
@@ -1306,26 +1326,6 @@ ${pastedText}
                   <option key={opt.name} value={opt.name}>{opt.name}</option>
                 ))}
               </select>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">من تاريخ</label>
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={e => setFromDate(e.target.value)}
-                  className="w-full px-2 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm min-h-[44px]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">إلى تاريخ</label>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={e => setToDate(e.target.value)}
-                  className="w-full px-2 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm min-h-[44px]"
-                />
-              </div>
             </div>
             <button
               onClick={exportToExcel}
