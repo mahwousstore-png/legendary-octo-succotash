@@ -23,8 +23,8 @@ This is a React + TypeScript + Vite application for managing a retail business. 
 
 - Use TypeScript for all new files with strict type checking enabled
 - Use functional components with React hooks exclusively - avoid class components
-- Explicitly type component props using interfaces; avoid `React.FC` as it adds unnecessary complexity
-- For components without props, no type annotation is needed on the component itself
+- Use `React.FC` type for all components (consistent with existing codebase)
+- Use `React.FC<PropsType>` for components with props, `React.FC` for components without props
 - Prefer arrow functions for component definitions
 - Use named exports for components and utilities
 - Keep components focused and single-responsibility
@@ -55,12 +55,18 @@ This is a React + TypeScript + Vite application for managing a retail business. 
 - Use `useCallback` for callback functions passed to child components
 - Component typing pattern:
   ```typescript
+  // Component without props
+  const MyComponent: React.FC = () => {
+    // component implementation
+  };
+  
+  // Component with props
   interface MyComponentProps {
     title: string;
     onSave: (data: FormData) => void;
   }
   
-  const MyComponent = ({ title, onSave }: MyComponentProps) => {
+  const MyComponent: React.FC<MyComponentProps> = ({ title, onSave }) => {
     // component implementation
   };
   ```
