@@ -10,6 +10,8 @@ import * as XLSX from 'xlsx';
 import { authService } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import PeriodFilter from './PeriodFilter';
+import { filterByPeriod } from '../lib/periodHelper';
 
 interface PaymentMethod {
   id: string;
@@ -36,6 +38,12 @@ const LockedOrders: React.FC = () => {
   const { entities } = useReceivables();
   const currentUser = authService.getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
+  
+  // Period filter state
+  const [selectedPeriod, setSelectedPeriod] = useState('current_month');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -156,17 +164,21 @@ const LockedOrders: React.FC = () => {
     };
   };
 
-  const lockedOrders = orders
-    .filter(order => order.is_locked === true)
-    .filter(order => {
-      if (!searchTerm) return true;
-      const term = searchTerm.toLowerCase();
-      const name = (order.customer_name || '').toLowerCase();
-      const phone = (order.phone_number || '').toString();
-      const number = (order.order_number || '').toString().toLowerCase();
-      return name.includes(term) || phone.includes(term) || number.includes(term);
-    })
-    .sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
+  const lockedOrders = filterByPeriod(
+    orders
+      .filter(order => order.is_locked === true)
+      .filter(order => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+        const name = (order.customer_name || '').toLowerCase();
+        const phone = (order.phone_number || '').toString();
+        const number = (order.order_number || '').toString().toLowerCase();
+        return name.includes(term) || phone.includes(term) || number.includes(term);
+      }),
+    selectedPeriod,
+    customStartDate,
+    customEndDate
+  ).sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
 
   const totalPages = Math.ceil(lockedOrders.length / itemsPerPage);
   const paginatedOrders = lockedOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -517,6 +529,19 @@ const LockedOrders: React.FC = () => {
         <h2 className="text-2xl md:text-3xl font-bold text-gray-900">الطلبات المقفلة</h2>
         <p className="text-gray-600 mt-1 md:mt-2 text-sm md:text-base">إدارة كاملة للطلبات المكتملة مع تحليل مالي دقيق</p>
       </div>
+      
+      {/* Period Filter */}
+      <PeriodFilter
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+        onCustomDateChange={(start, end) => {
+          setCustomStartDate(start);
+          setCustomEndDate(end);
+        }}
+      />
+      
       <div className="bg-white rounded-xl md:rounded-2xl shadow-lg p-3 md:p-6 mb-4 md:mb-6">
         <div className="flex flex-col gap-3 md:flex-row md:gap-4 justify-between">
           <div className="relative flex-1 md:max-w-md">

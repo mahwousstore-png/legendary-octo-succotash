@@ -7,6 +7,8 @@ import { supabase } from '../lib/supabase';
 import { useOrders } from '../hooks/useOrders';
 import { authService } from '../lib/auth';
 import toast, { Toaster } from 'react-hot-toast';
+import PeriodFilter from './PeriodFilter';
+import { filterByPeriod } from '../lib/periodHelper';
 interface PaymentMethod {
   id: string;
   name: string;
@@ -90,6 +92,12 @@ interface PaymentMethodSummary {
 const PaymentReceipts: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'payments' | 'employees'>('payments');
   const { orders: allOrders } = useOrders();
+  
+  // Period filter state
+  const [selectedPeriod, setSelectedPeriod] = useState('current_month');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  
   const [receipts, setReceipts] = useState<PaymentReceipt[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [userProfiles, setUserProfiles] = useState<Map<string, string>>(new Map());
@@ -119,7 +127,7 @@ const PaymentReceipts: React.FC = () => {
     if (paymentMethods.length > 0) {
       calculateMethodSummaries();
     }
-  }, [paymentMethods, allOrders, receipts, userProfiles]);
+  }, [paymentMethods, allOrders, receipts, userProfiles, selectedPeriod, customStartDate, customEndDate]);
   useEffect(() => {
     if (activeTab === 'employees') {
       fetchEmployeesData();
@@ -238,13 +246,17 @@ const PaymentReceipts: React.FC = () => {
   };
   /* --------------------------------------------------- */
   const calculateMethodSummaries = () => {
+    // Filter orders and receipts by period
+    const filteredOrders = filterByPeriod(allOrders, selectedPeriod, customStartDate, customEndDate);
+    const filteredReceipts = filterByPeriod(receipts, selectedPeriod, customStartDate, customEndDate);
+    
     const summaries: PaymentMethodSummary[] = [];
     const basketMethod = paymentMethods.find(m => m.code === 'salla_basket');
     const madaMethod = paymentMethods.find(m => m.code === 'mada');
     const creditMethod = paymentMethods.find(m => m.code === 'credit_card');
     if (basketMethod && (madaMethod || creditMethod)) {
-      const madaOrders = allOrders.filter(o => o.payment_method === 'mada');
-      const creditOrders = allOrders.filter(o => o.payment_method === 'credit_card');
+      const madaOrders = filteredOrders.filter(o => o.payment_method === 'mada');
+      const creditOrders = filteredOrders.filter(o => o.payment_method === 'credit_card');
       const allBasketOrders = [...madaOrders, ...creditOrders];
       const totalOriginal = allBasketOrders.reduce((s, o) => s + o.total_price, 0);
       const orderCount = allBasketOrders.length;
@@ -262,7 +274,7 @@ const PaymentReceipts: React.FC = () => {
           name: 'مدى',
           code: 'mada',
           orders: madaOrders,
-          receipts: receipts.filter(r => r.payment_method_code === 'mada'),
+          receipts: filteredReceipts.filter(r => r.payment_method_code === 'mada'),
           totalPaid: 0,
           feeMethod: madaMethod,
           totalOriginal: madaTotal,
@@ -278,7 +290,7 @@ const PaymentReceipts: React.FC = () => {
           name: 'بطاقة ائتمانية',
           code: 'credit_card',
           orders: creditOrders,
-          receipts: receipts.filter(r => r.payment_method_code === 'credit_card'),
+          receipts: filteredReceipts.filter(r => r.payment_method_code === 'credit_card'),
           totalPaid: 0,
           feeMethod: creditMethod,
           totalOriginal: creditTotal,
@@ -297,14 +309,14 @@ const PaymentReceipts: React.FC = () => {
         netDue,
         totalPaid,
         orders: allBasketOrders,
-        receipts: receipts.filter(r => r.payment_method_code === 'salla_basket'),
+        receipts: filteredReceipts.filter(r => r.payment_method_code === 'salla_basket'),
         logo_url: basketMethod.logo_url,
         subMethods
       });
     }
     paymentMethods.forEach(method => {
       if (!['mada', 'credit_card', 'salla_basket'].includes(method.code)) {
-        const relatedOrders = allOrders.filter(o => o.payment_method === method.code);
+        const relatedOrders = filteredOrders.filter(o => o.payment_method === method.code);
         const totalOriginal = relatedOrders.reduce((s, o) => s + o.total_price, 0);
         const orderCount = relatedOrders.length;
         const totalPaid = method.total_paid || 0;
@@ -313,7 +325,7 @@ const PaymentReceipts: React.FC = () => {
         const totalPerc = (totalOriginal * method.percentage_fee) / 100;
         const expectedFees = totalFixed + totalPerc;
         const netDue = Math.max(0, totalRemaining - expectedFees);
-        const methodReceipts = receipts.filter(r => r.payment_method_code === method.code);
+        const methodReceipts = filteredReceipts.filter(r => r.payment_method_code === method.code);
         summaries.push({
           method,
           name: method.name,
@@ -875,6 +887,19 @@ const getUserName = (userId: string): string => {
           <h2 className="text-3xl font-extrabold text-gray-900">طرق الدفع</h2>
           <p className="text-gray-600 text-lg">اضغط على أي طريقة لعرض التفاصيل</p>
         </div>
+        
+        {/* Period Filter */}
+        <PeriodFilter
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomDateChange={(start, end) => {
+            setCustomStartDate(start);
+            setCustomEndDate(end);
+          }}
+        />
+        
         {methodSummaries.length === 0 ? (
           <div className="text-center py-20">
             <Wallet className="h-16 w-16 text-gray-400 mx-auto mb-6" />

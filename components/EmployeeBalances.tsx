@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft, Banknote, Receipt, Trash2, User, AlertCircle, Users, X, CheckCircle, Download, FileText, TrendingUp, DollarSign
 } from 'lucide-react';
@@ -9,6 +9,8 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import PeriodFilter from './PeriodFilter';
+import { filterByPeriod } from '../lib/periodHelper';
 
 interface UserProfile {
   id: string;
@@ -44,6 +46,11 @@ const EmployeeAdvances: React.FC = () => {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<EmployeeBalanceTransaction | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Period filter state
+  const [selectedPeriod, setSelectedPeriod] = useState('current_month');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   // نموذج العملية الجديدة
   const [transactionAmount, setTransactionAmount] = useState<string>('');
@@ -405,7 +412,17 @@ const EmployeeAdvances: React.FC = () => {
 
   // تفاصيل الموظف (العهده والطريقة)
   if (selectedEmployee) {
-    const { user, current_balance, transactions } = selectedEmployee;
+    const { user, transactions } = selectedEmployee;
+    
+    // Filter transactions by period
+    const filteredTransactions = useMemo(() => {
+      return filterByPeriod(transactions, selectedPeriod, customStartDate, customEndDate);
+    }, [transactions, selectedPeriod, customStartDate, customEndDate]);
+    
+    // Calculate current balance from filtered transactions
+    const current_balance = useMemo(() => {
+      return filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
+    }, [filteredTransactions]);
 
     return (
       <div className="p-3 md:p-6 max-w-7xl mx-auto">
@@ -449,6 +466,18 @@ const EmployeeAdvances: React.FC = () => {
           </div>
         </div>
 
+        {/* Period Filter */}
+        <PeriodFilter
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomDateChange={(start, end) => {
+            setCustomStartDate(start);
+            setCustomEndDate(end);
+          }}
+        />
+
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl md:rounded-2xl p-4 md:p-6 mb-4 md:mb-8 shadow-sm">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3">
             <h3 className="text-lg md:text-xl font-bold text-gray-800">ملخص العهده</h3>
@@ -470,7 +499,7 @@ const EmployeeAdvances: React.FC = () => {
             </div>
             <div className="flex justify-between text-sm md:text-base">
               <span className="text-gray-700 font-medium">عدد العمليات:</span>
-              <span className="font-bold text-gray-900">{transactions.length}</span>
+              <span className="font-bold text-gray-900">{filteredTransactions.length}</span>
             </div>
           </div>
         </div>
@@ -478,13 +507,13 @@ const EmployeeAdvances: React.FC = () => {
         <div className="bg-white border border-gray-200 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm">
           <h3 className="text-base md:text-xl font-bold text-gray-800 mb-4 md:mb-5 flex items-center">
             <Receipt className="h-5 w-5 md:h-6 md:w-6 ml-2 text-amber-600" />
-            سجل العهده ({transactions.length})
+            سجل العهده ({filteredTransactions.length})
           </h3>
           <div className="space-y-2 md:space-y-3 max-h-96 overflow-y-auto">
-            {transactions.length === 0 ? (
+            {filteredTransactions.length === 0 ? (
               <p className="text-center text-gray-500 py-6">لا توجد عمليات في عهده بعد</p>
             ) : (
-              transactions.map(t => (
+              filteredTransactions.map(t => (
                 <div key={t.id} className={`rounded-lg md:rounded-xl p-3 md:p-4 shadow-sm ${t.type === 'credit'
                   ? 'bg-gradient-to-r from-amber-50 to-yellow-50'
                   : 'bg-gradient-to-r from-red-50 to-rose-50'
@@ -697,6 +726,23 @@ const EmployeeAdvances: React.FC = () => {
   }
 
   // الصفحة الرئيسية - قائمة الموظفين
+  // Filter employees and recalculate balances based on period
+  const filteredEmployees = useMemo(() => {
+    return employees.map(emp => {
+      const filteredTransactions = filterByPeriod(emp.transactions, selectedPeriod, customStartDate, customEndDate);
+      const current_balance = filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
+      return {
+        ...emp,
+        current_balance,
+        transactions: filteredTransactions
+      };
+    });
+  }, [employees, selectedPeriod, customStartDate, customEndDate]);
+
+  const suppliersReceivables = useMemo(() => {
+    return filteredEmployees.reduce((total, emp) => total + emp.current_balance, 0);
+  }, [filteredEmployees]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-center" reverseOrder={false} />
@@ -705,6 +751,18 @@ const EmployeeAdvances: React.FC = () => {
           <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 mb-2 md:mb-3">عهد الموظفين</h2>
           <p className="text-gray-600 text-sm md:text-lg">اضغط على أي موظف لعرض عهده</p>
         </div>
+
+        {/* Period Filter */}
+        <PeriodFilter
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomDateChange={(start, end) => {
+            setCustomStartDate(start);
+            setCustomEndDate(end);
+          }}
+        />
 
         <div className="mb-4 md:mb-8 bg-white border border-gray-200 rounded-lg md:rounded-xl p-4 md:p-6 shadow-sm">
           <div className="flex items-center justify-between">
@@ -728,7 +786,7 @@ const EmployeeAdvances: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
-            {employees.map(emp => (
+            {filteredEmployees.map(emp => (
               <div
                 key={emp.user.id}
                 onClick={() => setSelectedEmployee(emp)}
