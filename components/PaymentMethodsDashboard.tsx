@@ -12,6 +12,8 @@ import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
+import GlobalPeriodFilter from './GlobalPeriodFilter';
+import { usePeriodFilter } from '../lib/usePeriodFilter';
 // ======================== INTERFACES ========================
 interface PaymentMethod {
   id: string;
@@ -87,8 +89,15 @@ const PaymentReceipts: React.FC = () => {
   const [showPreview, setShowPreview] = useState(false);
   const currentUser = authService.getCurrentUser();
   const { orders: allOrders } = useOrders();
+  
+  // تطبيق الفلتر الزمني
+  const filteredAllOrders = usePeriodFilter(allOrders, 'order_date');
+  
   // فقط الطلبات المقفولة (is_locked = true)
-  const lockedOrders = allOrders.filter(o => o.is_locked === true);
+  const lockedOrders = filteredAllOrders.filter(o => o.is_locked === true);
+  
+  // تطبيق الفلتر الزمني على الإيصالات
+  const filteredReceipts = usePeriodFilter(receipts, 'receipt_date');
   // ======================== EFFECTS ========================
   useEffect(() => {
     fetchAllData();
@@ -167,7 +176,7 @@ const methodSummaries = useMemo(() => {
     const orderCount = sallaOrders.length;
 
     // الإيصالات اليدوية تُسجل فقط تحت salla_basket
-    const sallaReceipts = receipts.filter(r => r.payment_method_code === 'salla_basket');
+    const sallaReceipts = filteredReceipts.filter(r => r.payment_method_code === 'salla_basket');
     const totalPaid = sallaReceipts.reduce((sum, r) => sum + r.amount_received, 0);
 
     const totalRemaining = Math.max(0, totalOriginal - totalPaid);
@@ -259,13 +268,13 @@ const methodSummaries = useMemo(() => {
       netDue,
       totalPaid,
       orders: relatedOrders,
-      receipts: receipts.filter(r => r.payment_method_code === method.code),
+      receipts: filteredReceipts.filter(r => r.payment_method_code === method.code),
       logo_url: method.logo_url
     });
   });
 
   return summaries;
-}, [paymentMethods, lockedOrders, receipts]);
+}, [paymentMethods, lockedOrders, filteredReceipts]);
   // ======================== MANUAL PAYMENT ========================
   const handleManualPayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -589,6 +598,10 @@ const methodSummaries = useMemo(() => {
             <ArrowLeft className="h-5 w-5 ml-2" /> رجوع
           </button>
         </div>
+
+        {/* الفلتر الزمني الشامل */}
+        <GlobalPeriodFilter />
+
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="flex items-center mb-8">
             {logo_url ? (
@@ -946,6 +959,12 @@ const methodSummaries = useMemo(() => {
           </p>
         </div>
       </div>
+
+      {/* الفلتر الزمني الشامل */}
+      <div className="p-6 max-w-7xl mx-auto">
+        <GlobalPeriodFilter />
+      </div>
+
       <div className="p-6 max-w-7xl mx-auto">
         {methodSummaries.length === 0 ? (
           <div className="text-center py-20">

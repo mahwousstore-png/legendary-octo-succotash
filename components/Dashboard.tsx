@@ -5,6 +5,8 @@ import { useOrders } from '../hooks/useOrders';
 import { createClient } from '@supabase/supabase-js';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { formatDateTime, getDateRangeByPeriod, getPeriodLabel } from '../lib/dateFormatter';
+import GlobalPeriodFilter from './GlobalPeriodFilter';
+import { usePeriodFilter } from '../lib/usePeriodFilter';
 
 // إنشاء Supabase Client مرة واحدة فقط خارج المكون
 const supabase = createClient(
@@ -28,19 +30,9 @@ const queryClient = new QueryClient({
 // Wrapper لتوفير QueryClient للمكون الداخلي
 const DashboardContent: React.FC = () => {
   const { orders, stats, loading: ordersLoading, error: ordersError } = useOrders();
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('current_month');
 
-  // حساب نطاق التاريخ حسب الفترة المختارة
-  const periodRange = useMemo(() => getDateRangeByPeriod(selectedPeriod), [selectedPeriod]);
-
-  // تصفية الطلبات حسب الفترة المختارة
-  const filteredOrders = useMemo(() => {
-    if (selectedPeriod === 'all_time') return orders;
-    return orders.filter((order: any) => {
-      const orderDate = new Date(order.order_date || order.created_at);
-      return orderDate >= new Date(periodRange.start) && orderDate <= new Date(periodRange.end);
-    });
-  }, [orders, selectedPeriod, periodRange]);
+  // تطبيق الفلتر الزمني
+  const filteredOrders = usePeriodFilter(orders, 'order_date');
 
   // جلب طرق الدفع
   const { data: paymentMethods = [], isLoading: pmLoading } = useQuery({
@@ -55,24 +47,24 @@ const DashboardContent: React.FC = () => {
     },
   });
 
-  // جلب المصروفات (آخر 30 يوم)
-  const { data: expenses = [], isLoading: expensesLoading } = useQuery({
-    queryKey: ['expenses', 'last30days'],
+  // جلب المصروفات
+  const { data: allExpenses = [], isLoading: expensesLoading } = useQuery({
+    queryKey: ['expenses'],
     queryFn: async () => {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const { data, error } = await supabase
         .from('expenses')
-        .select('amount')
-        .gte('date', thirtyDaysAgo.toISOString().split('T')[0]);
+        .select('amount, date');
       if (error) throw error;
       return data || [];
     },
   });
 
+  // تطبيق الفلتر على المصروفات
+  const filteredExpenses = usePeriodFilter(allExpenses, 'date');
+
   const totalOtherExpenses = useMemo(() => {
-    return expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
-  }, [expenses]);
+    return filteredExpenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+  }, [filteredExpenses]);
 
   const getPaymentFee = (paymentMethodCode: string | null | undefined, totalPrice: number): number => {
     if (!paymentMethodCode || !totalPrice) return 0;
@@ -231,29 +223,8 @@ const DashboardContent: React.FC = () => {
         </div>
       </div>
 
-      {/* فلتر الفترة الزمنية */}
-      <div className="bg-white rounded-xl p-4 border border-beige-200 shadow-md">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <label className="font-semibold text-royal-900">عرض البيانات:</label>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 md:flex-none">
-            <select 
-              value={selectedPeriod} 
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="px-4 py-2 border border-beige-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 bg-white text-royal-900"
-            >
-              <option value="current_month">الشهر الحالي</option>
-              <option value="last_month">الشهر الماضي</option>
-              <option value="last_3_months">آخر 3 أشهر</option>
-              <option value="current_year">السنة الحالية</option>
-              <option value="all_time">كل الفترات</option>
-            </select>
-            
-            <div className="text-sm text-royal-600 bg-gold-50 px-4 py-2 rounded-lg border border-gold-200">
-              <span className="font-medium">الفترة:</span> {formatDateTime(new Date(periodRange.start))} - {formatDateTime(new Date(periodRange.end))}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* الفلتر الزمني الشامل */}
+      <GlobalPeriodFilter />
 
       {/* إحصائيات أعداد الطلبات */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
@@ -319,7 +290,7 @@ const DashboardContent: React.FC = () => {
           <div className="flex justify-between text-red-600"><span>رسوم بوابات الدفع</span><strong className="text-sm md:text-base">-{formatCurrency(totalPaymentFees)}</strong></div>
           <div className="flex justify-between text-red-600"><span>تكلفة الشحن (شامل الضريبة)</span><strong className="text-sm md:text-base">-{formatCurrency(totalShippingCosts)}</strong></div>
           <div className="flex justify-between text-red-600"><span>تكلفة المنتجات</span><strong className="text-sm md:text-base">-{formatCurrency(totalProductCosts)}</strong></div>
-          <div className="flex justify-between text-red-600"><span>مصروفات أخرى (آخر 30 يوم)</span><strong className="text-sm md:text-base">-{formatCurrency(totalOtherExpenses)}</strong></div>
+          <div className="flex justify-between text-red-600"><span>مصروفات أخرى</span><strong className="text-sm md:text-base">-{formatCurrency(totalOtherExpenses)}</strong></div>
           <div className="border-t border-beige-200 pt-3 md:pt-4 flex justify-between text-base md:text-lg font-bold">
             <span className="text-royal-900">صافي الربح النهائي</span>
             <span className={finalNetProfit >= 0 ? 'text-green-600' : 'text-red-600'}>

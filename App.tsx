@@ -37,6 +37,7 @@ import LoadingPage from './components/LoadingPage';
 
 import { useOrders } from './hooks/useOrders';
 import { authService } from './lib/auth';
+import { PeriodProvider } from './contexts/PeriodContext';
 
 interface MenuItem {
   id: string;
@@ -178,16 +179,25 @@ function App() {
 
   // === شاشة التحميل ===
   if (isLoading) {
-    return <LoadingPage />;
+    return (
+      <PeriodProvider>
+        <LoadingPage />
+      </PeriodProvider>
+    );
   }
 
   // === شاشة تسجيل الدخول ===
   if (!isAuthenticated) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <PeriodProvider>
+        <LoginPage onLoginSuccess={handleLoginSuccess} />
+      </PeriodProvider>
+    );
   }
 
   // === الواجهة الرئيسية بعد التحقق من الصلاحيات ===
   return (
+    <PeriodProvider>
     <div className="min-h-screen bg-page-100 font-sans relative" dir="rtl">
       {/* الهيدر */}
       <header className="bg-royal-900 border-b border-gold-500/30 fixed top-0 left-0 right-0 z-40 shadow-lg">
@@ -347,6 +357,7 @@ function App() {
         </div>
       </div>
     </div>
+    </PeriodProvider>
   );
 }
 
