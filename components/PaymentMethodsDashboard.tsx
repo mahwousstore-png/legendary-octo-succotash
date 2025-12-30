@@ -12,6 +12,8 @@ import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
+import PeriodFilter from './PeriodFilter';
+import { filterByPeriod } from '../lib/periodHelper';
 // ======================== INTERFACES ========================
 interface PaymentMethod {
   id: string;
@@ -73,6 +75,11 @@ interface PaymentMethodSummary {
 }
 // ======================== COMPONENT ========================
 const PaymentReceipts: React.FC = () => {
+  // Period filter state
+  const [selectedPeriod, setSelectedPeriod] = useState('current_month');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  
   const [receipts, setReceipts] = useState<PaymentReceipt[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [userProfiles, setUserProfiles] = useState<Map<string, string>>(new Map());
@@ -87,8 +94,16 @@ const PaymentReceipts: React.FC = () => {
   const [showPreview, setShowPreview] = useState(false);
   const currentUser = authService.getCurrentUser();
   const { orders: allOrders } = useOrders();
-  // فقط الطلبات المقفولة (is_locked = true)
-  const lockedOrders = allOrders.filter(o => o.is_locked === true);
+  // فقط الطلبات المقفولة (is_locked = true) وفلترتها حسب الفترة
+  const lockedOrders = useMemo(() => {
+    const locked = allOrders.filter(o => o.is_locked === true);
+    return filterByPeriod(locked, selectedPeriod, customStartDate, customEndDate);
+  }, [allOrders, selectedPeriod, customStartDate, customEndDate]);
+  
+  // Filter receipts by period
+  const filteredReceipts = useMemo(() => {
+    return filterByPeriod(receipts, selectedPeriod, customStartDate, customEndDate);
+  }, [receipts, selectedPeriod, customStartDate, customEndDate]);
   // ======================== EFFECTS ========================
   useEffect(() => {
     fetchAllData();
@@ -167,7 +182,7 @@ const methodSummaries = useMemo(() => {
     const orderCount = sallaOrders.length;
 
     // الإيصالات اليدوية تُسجل فقط تحت salla_basket
-    const sallaReceipts = receipts.filter(r => r.payment_method_code === 'salla_basket');
+    const sallaReceipts = filteredReceipts.filter(r => r.payment_method_code === 'salla_basket');
     const totalPaid = sallaReceipts.reduce((sum, r) => sum + r.amount_received, 0);
 
     const totalRemaining = Math.max(0, totalOriginal - totalPaid);
@@ -259,13 +274,13 @@ const methodSummaries = useMemo(() => {
       netDue,
       totalPaid,
       orders: relatedOrders,
-      receipts: receipts.filter(r => r.payment_method_code === method.code),
+      receipts: filteredReceipts.filter(r => r.payment_method_code === method.code),
       logo_url: method.logo_url
     });
   });
 
   return summaries;
-}, [paymentMethods, lockedOrders, receipts]);
+}, [paymentMethods, lockedOrders, filteredReceipts]);
   // ======================== MANUAL PAYMENT ========================
   const handleManualPayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -946,6 +961,21 @@ const methodSummaries = useMemo(() => {
           </p>
         </div>
       </div>
+      
+      {/* Period Filter */}
+      <div className="p-6 max-w-7xl mx-auto">
+        <PeriodFilter
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomDateChange={(start, end) => {
+            setCustomStartDate(start);
+            setCustomEndDate(end);
+          }}
+        />
+      </div>
+      
       <div className="p-6 max-w-7xl mx-auto">
         {methodSummaries.length === 0 ? (
           <div className="text-center py-20">
