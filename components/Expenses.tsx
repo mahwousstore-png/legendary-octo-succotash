@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, CreditCard as Edit, Trash2, Calendar, DollarSign, Tag, FileText, TrendingUp, Search, Download, List } from 'lucide-react';
+import { Plus, CreditCard as Edit, Trash2, Calendar, DollarSign, Tag, FileText, TrendingUp, Search, Download, List, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { authService } from '../lib/auth';
+import toast, { Toaster } from 'react-hot-toast';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
@@ -16,6 +17,9 @@ interface Expense {
   created_by?: string;
   created_at?: string;
   updated_at?: string;
+  user_id?: string;
+  balance_transaction_id?: string;
+  deducted_from_custody?: boolean;
 }
 
 interface Category {
@@ -41,6 +45,8 @@ const Expenses: React.FC = () => {
   const [toDate, setToDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [employeeBalance, setEmployeeBalance] = useState<number>(0);
+  const [deductFromCustody, setDeductFromCustody] = useState<boolean>(false);
 
   const [formData, setFormData] = useState({
     description: '',
@@ -110,10 +116,31 @@ const Expenses: React.FC = () => {
     }
   };
 
+  const fetchEmployeeBalance = async () => {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('employee_balance_transactions')
+        .select('amount, status')
+        .eq('user_id', currentUser.id)
+        .eq('status', 'confirmed');
+
+      if (error) throw error;
+
+      const balance = (data || []).reduce((sum, transaction) => sum + transaction.amount, 0);
+      setEmployeeBalance(balance);
+    } catch (err) {
+      console.error('Error fetching employee balance:', err);
+      setEmployeeBalance(0);
+    }
+  };
+
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
-      await Promise.all([fetchExpenses(), fetchCategories()]);
+      await Promise.all([fetchExpenses(), fetchCategories(), fetchEmployeeBalance()]);
       setLoading(false);
     };
     fetchAll();
@@ -385,46 +412,98 @@ const Expenses: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) {
+      toast.error('يجب تسجيل الدخول لإضافة مصروف');
+      return;
+    }
+
     try {
+      const amount = parseFloat(formData.amount);
+      
+      // Check if deducting from custody and validate balance
+      if (deductFromCustody && !editingExpense) {
+        if (amount > employeeBalance) {
+          toast.error(
+            `رصيد العهدة غير كافٍ. الرصيد المتاح: ${employeeBalance.toLocaleString('EN-US')} ر.س والمطلوب: ${amount.toLocaleString('EN-US')} ر.س`
+          );
+          return;
+        }
+
+        // Confirm deduction from custody
+        const confirmed = window.confirm(
+          `هل أنت متأكد من خصم ${amount.toLocaleString('EN-US')} ر.س من عهدتك؟`
+        );
+        
+        if (!confirmed) return;
+      }
+
       const expenseData = {
         description: formData.description,
-        amount: parseFloat(formData.amount),
+        amount: amount,
         category: formData.category,
         date: formData.date
       };
+
       if (editingExpense) {
         const { error } = await supabase
           .from('expenses')
           .update(expenseData)
           .eq('id', editingExpense.id);
         if (error) throw error;
+        toast.success('تم تحديث المصروف بنجاح');
       } else {
-        // Get current user from authService
-        const currentUser = authService.getCurrentUser();
+        const createdBy = currentUser.full_name || currentUser.email || 'غير معروف';
+        
+        let balanceTransactionId = null;
 
-        console.log('🔍 Current User:', currentUser);
+        // If deducting from custody, create a debit transaction
+        if (deductFromCustody) {
+          const { data: transaction, error: transactionError } = await supabase
+            .from('employee_balance_transactions')
+            .insert({
+              user_id: currentUser.id,
+              amount: -amount, // Negative for debit
+              type: 'debit',
+              reason: `مصروف: ${formData.description}`,
+              transaction_date: formData.date,
+              created_by: currentUser.id,
+              status: 'confirmed',
+              confirmed_at: new Date().toISOString(),
+              confirmed_by: currentUser.id
+            })
+            .select()
+            .single();
 
-        let createdBy = 'غير معروف';
-
-        if (currentUser) {
-          createdBy = currentUser.full_name || currentUser.email || 'غير معروف';
-          console.log('📝 Final created_by value:', createdBy);
-        } else {
-          console.log('⚠️ No current user found');
+          if (transactionError) throw transactionError;
+          balanceTransactionId = transaction.id;
         }
 
         const expenseToInsert = {
           ...expenseData,
-          created_by: createdBy
+          created_by: createdBy,
+          user_id: currentUser.id,
+          balance_transaction_id: balanceTransactionId,
+          deducted_from_custody: deductFromCustody
         };
-
-        console.log('💾 Inserting expense:', expenseToInsert);
 
         const { error } = await supabase
           .from('expenses')
           .insert([expenseToInsert]);
         if (error) throw error;
+
+        if (deductFromCustody) {
+          const newBalance = employeeBalance - amount;
+          toast.success(
+            `تم خصم المصروف من عهدتك بنجاح. الرصيد المتبقي: ${newBalance.toLocaleString('EN-US')} ر.س`
+          );
+          await fetchEmployeeBalance();
+        } else {
+          toast.success('تم إضافة المصروف بنجاح');
+        }
       }
+
       await fetchExpenses();
       setFormData({
         description: '',
@@ -432,10 +511,12 @@ const Expenses: React.FC = () => {
         category: '',
         date: ''
       });
+      setDeductFromCustody(false);
       setShowAddForm(false);
       setEditingExpense(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ في حفظ البيانات');
+      console.error('Error saving expense:', err);
+      toast.error(err instanceof Error ? err.message : 'حدث خطأ في حفظ البيانات');
     }
   };
 
@@ -513,6 +594,7 @@ const Expenses: React.FC = () => {
 
   return (
     <div className="p-6 min-h-screen bg-gray-50">
+      <Toaster position="top-center" reverseOrder={false} />
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -762,6 +844,7 @@ const Expenses: React.FC = () => {
                 onClick={() => {
                   setShowAddForm(false);
                   setEditingExpense(null);
+                  setDeductFromCustody(false);
                   setFormData({
                     description: '',
                     amount: '',
@@ -835,6 +918,65 @@ const Expenses: React.FC = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                   />
                 </div>
+
+                {/* Custody deduction option - only show for new expenses */}
+                {!editingExpense && authService.getCurrentUser()?.role !== 'admin' && (
+                  <div>
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center space-x-2 space-x-reverse cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={deductFromCustody}
+                            onChange={(e) => setDeductFromCustody(e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <span className="text-sm font-semibold text-gray-700">خصم من العهدة</span>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">رصيد العهدة المتاح:</span>
+                        <span className={`font-bold ${employeeBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {employeeBalance.toLocaleString('EN-US')} ر.س
+                        </span>
+                      </div>
+
+                      {deductFromCustody && formData.amount && (
+                        <div className="pt-2 border-t border-amber-200">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">الرصيد بعد الخصم:</span>
+                            <span className={`font-bold ${(employeeBalance - parseFloat(formData.amount)) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {(employeeBalance - parseFloat(formData.amount || '0')).toLocaleString('EN-US')} ر.س
+                            </span>
+                          </div>
+                          {parseFloat(formData.amount || '0') > employeeBalance && (
+                            <div className="flex items-start space-x-2 space-x-reverse mt-2 text-xs text-red-600">
+                              <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                              <span>تحذير: المبلغ المطلوب أكبر من رصيد العهدة المتاح</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Admin option to deduct from custody */}
+                {!editingExpense && authService.getCurrentUser()?.role === 'admin' && (
+                  <div>
+                    <label className="flex items-center space-x-2 space-x-reverse cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={deductFromCustody}
+                        onChange={(e) => setDeductFromCustody(e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm font-semibold text-gray-700">خصم من العهدة (اختياري)</span>
+                    </label>
+                    <p className="text-xs text-gray-500 mr-6 mt-1">يمكن للمدير إضافة مصروف بدون خصم من العهدة</p>
+                  </div>
+                )}
               </div>
               <div className="flex gap-4 pt-6">
                 <button
@@ -849,6 +991,7 @@ const Expenses: React.FC = () => {
                   onClick={() => {
                     setShowAddForm(false);
                     setEditingExpense(null);
+                    setDeductFromCustody(false);
                     setFormData({
                       description: '',
                       amount: '',
