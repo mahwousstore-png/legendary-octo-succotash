@@ -289,7 +289,10 @@ const EmployeeAdvances: React.FC = () => {
         .select()
         .single();
 
-      if (expenseError) throw expenseError;
+      if (expenseError) {
+        console.error('خطأ في إضافة المصروف (expenses):', expenseError);
+        throw expenseError;
+      }
 
       // 2. خصم المبلغ من عهدة الموظف
       const { error: balanceError } = await supabase
@@ -307,7 +310,10 @@ const EmployeeAdvances: React.FC = () => {
           // related_expense_id: expenseResult.id
         }]);
 
-      if (balanceError) throw balanceError;
+      if (balanceError) {
+        console.error('خطأ في خصم العهدة (transactions):', balanceError);
+        throw balanceError;
+      }
 
       toast.success(`تم إضافة المصروف وخصم ${amount.toFixed(2)} ر.س من عهدتك بنجاح`);
       
@@ -320,7 +326,7 @@ const EmployeeAdvances: React.FC = () => {
       await fetchEmployeesData(); // تحديث بيانات العهدة بعد الخصم
     } catch (err: any) {
       console.error('خطأ في إضافة المصروف:', err);
-      toast.error(err.message || 'فشل في إضافة المصروف');
+      toast.error(`فشل في إضافة المصروف: ${err.message || 'خطأ غير معروف'}`);
     }
   };
 
