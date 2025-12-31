@@ -613,7 +613,7 @@ const EmployeeAdvances: React.FC = () => {
     const { user, current_balance, transactions, pending_transactions } = selectedEmployee;
 
     // تطبيق الفلتر الزمني على المعاملات
-    const filteredTransactions = usePeriodFilter(transactions, 'transaction_date');
+    const filteredTransactions = usePeriodFilter(transactions || [], 'transaction_date');
     const filteredPendingTransactions = usePeriodFilter(pending_transactions || [], 'transaction_date');
 
     return (
@@ -634,12 +634,12 @@ const EmployeeAdvances: React.FC = () => {
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8 gap-4">
           <div className="flex items-center">
-            <div className="h-12 w-12 md:h-16 md:w-16 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg md:rounded-xl shadow-md ml-3 md:ml-4 flex items-center justify-center">
+            <div className="h-12 w-12 md:h-16 md:w-16 bg-gradient-gold rounded-lg md:rounded-xl shadow-gold ml-3 md:ml-4 flex items-center justify-center">
               <User className="h-6 w-6 md:h-9 md:w-9 text-white" />
             </div>
             <div>
-              <h2 className="text-xl md:text-3xl font-bold text-gray-900">{user.full_name}</h2>
-              <p className="text-gray-600 text-sm md:text-lg">{user.email}</p>
+              <h2 className="text-xl md:text-3xl font-bold text-gold-500">{user?.full_name || 'موظف'}</h2>
+              <p className="text-gray-600 text-sm md:text-lg">{user?.email || ''}</p>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
@@ -663,28 +663,28 @@ const EmployeeAdvances: React.FC = () => {
         {/* الفلتر الزمني الشامل */}
         <GlobalPeriodFilter />
 
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl md:rounded-2xl p-4 md:p-6 mb-4 md:mb-8 shadow-sm">
+        <div className="bg-royal-800 border border-gold-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 mb-4 md:mb-8 shadow-luxury">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 md:mb-6">
-            <h3 className="text-lg md:text-xl font-bold text-gray-800">ملخص العهده</h3>
+            <h3 className="text-lg md:text-xl font-bold text-gold-400">ملخص العهده</h3>
             <button
               onClick={() => setShowTransactionModal(true)}
-              className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-3 md:px-5 py-2 md:py-3 rounded-lg md:rounded-xl hover:from-amber-700 hover:to-orange-700 flex items-center space-x-2 shadow-md transition-all w-full sm:w-auto justify-center text-sm md:text-base"
+              className="bg-gradient-gold text-royal-900 px-3 md:px-5 py-2 md:py-3 rounded-lg md:rounded-xl font-bold shadow-gold hover:shadow-glow transition-all duration-300 flex items-center space-x-2 w-full sm:w-auto justify-center text-sm md:text-base"
             >
               <Banknote className="h-4 w-4 md:h-5 md:w-5" />
-              <span className="font-medium">{currentUser?.role === 'admin' ? 'عملية جديدة' : 'إضافة مصروف'}</span>
+              <span className="font-medium">{currentUser?.role === 'admin' ? 'عملية جديدة' : 'إضافة مصروف جديد'}</span>
             </button>
           </div>
 
           <div className="space-y-3 md:space-y-4">
             <div className="flex justify-between text-lg md:text-2xl font-extrabold">
-              <span className="text-gray-900">رصيد الموظف:</span>
-              <span className={current_balance >= 0 ? 'text-amber-600' : 'text-red-600'}>
-                {formatCurrency(current_balance)}
+              <span className="text-white">رصيد الموظف:</span>
+              <span className={(current_balance || 0) >= 0 ? 'text-gold-500' : 'text-red-500'}>
+                {formatCurrency(current_balance || 0)}
               </span>
             </div>
             <div className="flex justify-between text-sm md:text-base">
-              <span className="text-gray-700 font-medium">عدد العمليات:</span>
-              <span className="font-bold text-gray-900">{filteredTransactions.length}</span>
+              <span className="text-royal-300 font-medium">عدد العمليات:</span>
+              <span className="font-bold text-white">{filteredTransactions.length}</span>
             </div>
           </div>
         </div>
@@ -829,9 +829,9 @@ const EmployeeAdvances: React.FC = () => {
         {/* نافذة إضافة عملية... عهدة */}
         {showTransactionModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="bg-royal-800 border border-gold-500/30 rounded-2xl p-6 max-w-md w-full shadow-luxury">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">
+                <h3 className="text-2xl font-bold text-gold-500">
                   {currentUser?.role === 'admin' ? `عملية جديدة في عهده (${user.full_name})` : 'إضافة مصروف'}
                 </h3>
                 <button onClick={() => setShowTransactionModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -843,18 +843,18 @@ const EmployeeAdvances: React.FC = () => {
               {currentUser?.role === 'admin' && (
                 <form onSubmit={handleEmployeeTransaction} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">نوع العملية</label>
+                  <label className="block text-sm font-bold text-royal-300 mb-2">نوع العملية</label>
                   <select
                     value={transactionType}
                     onChange={e => setTransactionType(e.target.value as 'credit' | 'debit')}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                   >
                     <option value="credit">صرف عهده (إضافة للموظف)</option>
                     <option value="debit">تسوية عهده (استلام من الموظف)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">المبلغ</label>
+                  <label className="block text-sm font-bold text-royal-300 mb-2">المبلغ</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -863,36 +863,35 @@ const EmployeeAdvances: React.FC = () => {
                       value={transactionAmount}
                       onChange={e => setTransactionAmount(e.target.value)}
                       required
-                      className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-amber-500 focus:border-amber-500 text-lg"
-                      placeholder="0.00"
+              className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"                     placeholder="0.00"
                     />
-                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 font-bold">ر.س</span>
+                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gold-500 font-bold">ر.س</span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">تاريخ العملية</label>
+                  <label className="block text-sm font-bold text-royal-300 mb-2">تاريخ العملية</label>
                   <input
                     type="date"
                     value={transactionDate}
                     onChange={e => setTransactionDate(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">السبب (اختياري)</label>
+                  <labelclassName="block text-sm font-medium text-royal-300 mb-2"السبب (اختياري)</label>
                   <textarea
                     value={transactionReason}
                     onChange={e => setTransactionReason(e.target.value)}
                     rows={2}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                     placeholder="مثلاً: مصاريف تسويق، مشتريات نقدية..."
                   />
                 </div>
-                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <div className="flex gap-3 pt-4 border-t border-gold-500/30">
                   <button
                     type="submit"
-                    className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 px-6 rounded-xl hover:from-amber-700 hover:to-orange-700 font-bold flex items-center justify-center space-x-2 shadow-md"
+                    className="flex-1 bg-gradient-gold text-royal-900 py-3 px-6 rounded-xl font-bold shadow-gold hover:shadow-glow transition-all flex items-center justify-center space-x-2"
                   >
                     <CheckCircle className="h-5 w-5" />
                     <span>تسجيل في العهده</span>
@@ -912,18 +911,18 @@ const EmployeeAdvances: React.FC = () => {
               {currentUser?.role === 'user' && (
                 <form onSubmit={handleAddExpense} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">وصف المصروف</label>
+                    <label className="block text-sm font-bold text-royal-300 mb-2">وصف المصروف</label>
                     <input
                       type="text"
                       value={expenseDescription}
                       onChange={e => setExpenseDescription(e.target.value)}
                       required
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-amber-500 focus:border-amber-500"
+                      className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                       placeholder="مثلاً: دفعت لمندوب التوصيل 50 ر.س"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">المبلغ</label>
+                    <label className="block text-sm font-bold text-royal-300 mb-2">المبلغ</label>
                     <div className="relative">
                       <input
                         type="number"
@@ -932,19 +931,19 @@ const EmployeeAdvances: React.FC = () => {
                         value={expenseAmount}
                         onChange={e => setExpenseAmount(e.target.value)}
                         required
-                        className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-amber-500 focus:border-amber-500 text-lg"
+                        className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                         placeholder="0.00"
                       />
-                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 font-bold">ر.س</span>
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gold-500 font-bold">ر.س</span>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">فئة المصروف</label>
+                    <label className="block text-sm font-bold text-royal-300 mb-2">فئة المصروف</label>
                     <select
                       value={expenseCategory}
                       onChange={e => setExpenseCategory(e.target.value)}
                       required
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-amber-500 focus:border-amber-500"
+                      className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                     >
                       <option value="">اختر فئة...</option>
                       {categories.map(cat => (
@@ -953,19 +952,19 @@ const EmployeeAdvances: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">تاريخ المصروف</label>
+                    <label className="block text-sm font-bold text-royal-300 mb-2">تاريخ المصروف</label>
                     <input
                       type="date"
                       value={expenseDate}
                       onChange={e => setExpenseDate(e.target.value)}
                       required
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-amber-500 focus:border-amber-500"
+                      className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                     />
                   </div>
-                  <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <div className="flex gap-3 pt-4 border-t border-gold-500/30">
                     <button
                       type="submit"
-                      className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 px-6 rounded-xl hover:from-amber-700 hover:to-orange-700 font-bold flex items-center justify-center space-x-2 shadow-md"
+                      className="flex-1 bg-gradient-gold text-royal-900 py-3 px-6 rounded-xl font-bold shadow-gold hover:shadow-glow transition-all"fy-center space-x-2 shadow-md"
                     >
                       <CheckCircle className="h-5 w-5" />
                       <span>إضافة المصروف</span>
@@ -973,8 +972,7 @@ const EmployeeAdvances: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowTransactionModal(false)}
-                      className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-300 font-bold"
-                    >
+                      className="flex-1 bg-royal-700 text-white py-3 px-6 rounded-xl hover:bg-royal-600 font-bold transition-colors"   >
                       إلغاء
                     </button>
                   </div>
@@ -1020,7 +1018,7 @@ const EmployeeAdvances: React.FC = () => {
               <div className="p-8">
                 <div id="employee-preview-content" className="bg-white" dir="rtl">
                   <div className="text-center mb-8 border-b pb-6">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    <h1className="text-xl font-bold text-gold-500 mb-6"2">
                       تقرير عهدة الموظف: {user.full_name}
                     </h1>
                     <p className="text-gray-600">تاريخ التقرير: {formatDateTime(new Date())}</p>
@@ -1115,29 +1113,29 @@ const EmployeeAdvances: React.FC = () => {
               <div
                 key={emp.user.id}
                 onClick={() => setSelectedEmployee(emp)}
-                className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 md:hover:-translate-y-2 hover:border-amber-400"
+                className="bg-royal-800 border-2 border-gold-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-luxury hover:shadow-glow transition-all duration-300 cursor-pointer transform hover:-translate-y-1 md:hover:-translate-y-2 hover:border-gold-500 group"
               >
                 <div className="flex items-center justify-between mb-4 md:mb-5">
                   <div className="flex items-center space-x-2 md:space-x-4 space-x-reverse">
-                    <div className="p-2 md:p-3 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg md:rounded-xl shadow-md">
+                    <div className="p-2 md:p-3 bg-gradient-gold rounded-lg md:rounded-xl shadow-gold">
                       <User className="h-6 w-6 md:h-8 md:w-8 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-base md:text-xl text-gray-900">{emp.user.full_name}</h3>
-                      <p className="text-xs md:text-sm text-gray-600 truncate max-w-[150px] md:max-w-full">{emp.user.email}</p>
+                      <h3 className="font-extrabold text-base md:text-xl text-white group-hover:text-gold-400 transition-colors">{emp.user.full_name}</h3>
+                      <p className="text-xs md:text-sm text-royal-300 truncate max-w-[150px] md:max-w-full">{emp.user.email}</p>
                     </div>
                   </div>
                 </div>
                 <div className="space-y-3 md:space-y-4">
-                  <div className="flex justify-between text-base md:text-2xl font-extrabold pt-3 md:pt-4 border-t-2 border-amber-200">
-                    <span className="text-gray-900">رصيد الموظف:</span>
-                    <span className={emp.current_balance >= 0 ? 'text-amber-600' : 'text-red-600'}>
+                  <div className="flex justify-between text-base md:text-2xl font-extrabold pt-3 md:pt-4 border-t-2 border-gold-500/30">
+                    <span className="text-white">رصيد الموظف:</span>
+                    <span className={emp.current_balance >= 0 ? 'text-gold-500' : 'text-red-500'}>
                       {formatCurrency(emp.current_balance)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs md:text-sm">
-                    <span className="text-gray-600 font-medium">عدد العمليات:</span>
-                    <span className="font-bold text-gray-900">{emp.transactions.length}</span>
+                    <span className="text-royal-300 font-medium">عدد العمليات:</span>
+                    <span className="font-bold text-white">{emp.transactions.length}</span>
                   </div>
                 </div>
               </div>
@@ -1149,7 +1147,7 @@ const EmployeeAdvances: React.FC = () => {
       {/* نافذة تأكيد الحذف */}
       {showDeleteConfirmModal && transactionToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+          <div className="bg-royal-800 border border-gold-500/30 rounded-2xl p-6 max-w-md w-full shadow-luxury">
             <div className="flex items-center mb-4 text-red-600">
               <AlertCircle className="h-8 w-8 ml-3" />
               <h3 className="text-xl font-bold">تأكيد حذف العملية من العهده</h3>
