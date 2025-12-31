@@ -57,12 +57,33 @@ const EmployeeAdvances: React.FC = () => {
   const [transactionDate, setTransactionDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [transactionType, setTransactionType] = useState<'credit' | 'debit'>('credit');
   const [transactionReason, setTransactionReason] = useState<string>('');
+  
+  // نموذج المصروف (للموظف)
+  const [expenseDescription, setExpenseDescription] = useState<string>('');
+  const [expenseAmount, setExpenseAmount] = useState<string>('');
+  const [expenseCategory, setExpenseCategory] = useState<string>('');
+  const [expenseDate, setExpenseDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [categories, setCategories] = useState<any[]>([]);
 
   const currentUser = authService.getCurrentUser();
 
   useEffect(() => {
     fetchEmployeesData();
+    fetchCategories();
   }, []);
+  
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
 
   const fetchEmployeesData = async () => {
     setLoading(true);
@@ -218,6 +239,71 @@ const EmployeeAdvances: React.FC = () => {
     } catch (err: any) {
       console.error('خطأ في تسجيل العهده:', err);
       toast.error(err.message || 'فشل التسجيل');
+    }
+  };
+  // دالة إضافة مصروف من صفحة أرصدة الموظفين (للموظف)
+  const handleAddExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !expenseAmount || !expenseDescription || !expenseCategory) {
+      toast.error('يرجى ملء جميع الحقول المطلوبة');
+      return;
+    }
+
+    const amount = parseFloat(expenseAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('المبلغ يجب أن يكون رقمًا موجبًا');
+      return;
+    }
+
+    try {
+      // 1. إضافة المصروف في جدول expenses
+      const { data: expenseResult, error: expenseError } = await supabase
+        .from('expenses')
+        .insert([{
+          description: expenseDescription,
+          amount: amount,
+          category_id: expenseCategory,
+          date: expenseDate,
+          created_by: currentUser.id,
+          status: 'approved' // تلقائياً معتمد
+        }])
+        .select()
+        .single();
+
+      if (expenseError) throw expenseError;
+
+      // 2. خصم المبلغ من عهدة الموظف
+      const { error: balanceError } = await supabase
+        .from('employee_balance_transactions')
+        .insert([{
+          user_id: currentUser.id,
+          amount: -amount,
+          type: 'debit',
+          reason: `مصروف: ${expenseDescription}`,
+          transaction_date: expenseDate,
+          created_by: currentUser.id,
+          status: 'confirmed',
+          confirmed_at: new Date().toISOString(),
+          confirmed_by: currentUser.id,
+          related_expense_id: expenseResult.id
+        }]);
+
+      if (balanceError) throw balanceError;
+
+      toast.success(`تم إضافة المصروف وخصم ${amount.toFixed(2)} ر.س من عهدتك بنجاح`);
+      
+      // إعادة تعيين النموذج
+      setExpenseDescription('');
+      setExpenseAmount('');
+      setExpenseCategory('');
+      setExpenseDate(new Date().toISOString().split('T')[0]);
+      setShowTransactionModal(false);
+      
+      // تحديث البيانات
+      await fetchEmployeesData();
+    } catch (err: any) {
+      console.error('خطأ في إضافة المصروف:', err);
+      toast.error(err.message || 'فشل في إضافة المصروف');
     }
   };
 
@@ -559,15 +645,13 @@ const EmployeeAdvances: React.FC = () => {
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl md:rounded-2xl p-4 md:p-6 mb-4 md:mb-8 shadow-sm">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 md:mb-6">
             <h3 className="text-lg md:text-xl font-bold text-gray-800">ملخص العهده</h3>
-            {currentUser?.role === 'admin' && (
-              <button
-                onClick={() => setShowTransactionModal(true)}
-                className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-3 md:px-5 py-2 md:py-3 rounded-lg md:rounded-xl hover:from-amber-700 hover:to-orange-700 flex items-center space-x-2 shadow-md transition-all w-full sm:w-auto justify-center text-sm md:text-base"
-              >
-                <Banknote className="h-4 w-4 md:h-5 md:w-5" />
-                <span className="font-medium">عملية جديدة</span>
-              </button>
-            )}
+            <button
+              onClick={() => setShowTransactionModal(true)}
+              className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-3 md:px-5 py-2 md:py-3 rounded-lg md:rounded-xl hover:from-amber-700 hover:to-orange-700 flex items-center space-x-2 shadow-md transition-all w-full sm:w-auto justify-center text-sm md:text-base"
+            >
+              <Banknote className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="font-medium">{currentUser?.role === 'admin' ? 'عملية جديدة' : 'إضافة مصروف'}</span>
+            </button>
           </div>
 
           <div className="space-y-3 md:space-y-4">
@@ -726,12 +810,17 @@ const EmployeeAdvances: React.FC = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">عملية جديدة في عهده ({user.full_name})</h3>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {currentUser?.role === 'admin' ? `عملية جديدة في عهده (${user.full_name})` : 'إضافة مصروف'}
+                </h3>
                 <button onClick={() => setShowTransactionModal(false)} className="text-gray-400 hover:text-gray-600">
                   <X className="h-7 w-7" />
                 </button>
               </div>
-              <form onSubmit={handleEmployeeTransaction} className="space-y-5">
+              
+              {/* نموذج المدير: صرف عهدة / تسوية */}
+              {currentUser?.role === 'admin' && (
+                <form onSubmit={handleEmployeeTransaction} className="space-y-5">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">نوع العملية</label>
                   <select
@@ -796,6 +885,80 @@ const EmployeeAdvances: React.FC = () => {
                   </button>
                 </div>
               </form>
+              )}
+              
+              {/* نموذج الموظف: إضافة مصروف */}
+              {currentUser?.role === 'user' && (
+                <form onSubmit={handleAddExpense} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">وصف المصروف</label>
+                    <input
+                      type="text"
+                      value={expenseDescription}
+                      onChange={e => setExpenseDescription(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-amber-500 focus:border-amber-500"
+                      placeholder="مثلاً: دفعت لمندوب التوصيل 50 ر.س"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">المبلغ</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={expenseAmount}
+                        onChange={e => setExpenseAmount(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-amber-500 focus:border-amber-500 text-lg"
+                        placeholder="0.00"
+                      />
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 font-bold">ر.س</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">فئة المصروف</label>
+                    <select
+                      value={expenseCategory}
+                      onChange={e => setExpenseCategory(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-amber-500 focus:border-amber-500"
+                    >
+                      <option value="">اختر فئة...</option>
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">تاريخ المصروف</label>
+                    <input
+                      type="date"
+                      value={expenseDate}
+                      onChange={e => setExpenseDate(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-amber-500 focus:border-amber-500"
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-4 border-t border-gray-200">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 px-6 rounded-xl hover:from-amber-700 hover:to-orange-700 font-bold flex items-center justify-center space-x-2 shadow-md"
+                    >
+                      <CheckCircle className="h-5 w-5" />
+                      <span>إضافة المصروف</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowTransactionModal(false)}
+                      className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-300 font-bold"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}

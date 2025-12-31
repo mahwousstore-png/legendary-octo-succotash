@@ -113,6 +113,11 @@ function App() {
 
   // تصفية القوائم حسب الصلاحيات
   const filteredMenuItems = menuItems.filter(item => {
+    // إخفاء صفحة المصروفات عن الموظف العادي
+    if (item.id === 'expenses' && currentUser?.role === 'user') {
+      return false;
+    }
+    
     const permKey = getPermissionKey(item.id);
     if (!permKey || !currentUser?.permissions) return false;
     return currentUser.permissions[permKey] === true;
