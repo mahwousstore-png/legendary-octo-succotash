@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import {
   Home,
   ShoppingCart,
@@ -34,6 +34,7 @@ import SupplierLedger from './components/SupplierLedger';
 import UserManagement from './components/UserManagement';
 import LoginPage from './components/LoginPage';
 import LoadingPage from './components/LoadingPage';
+import LoadingScreen from './components/LoadingScreen';
 
 import { useOrders } from './hooks/useOrders';
 import { authService } from './lib/auth';
@@ -50,6 +51,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
   const { orders, stats } = useOrders();
@@ -121,6 +123,12 @@ function App() {
     const initApp = async () => {
       setIsLoading(true);
       try {
+        // محاكاة تهيئة التطبيق
+        console.log('Initializing Mahwous App...');
+        
+        // تأخير صغير لضمان تحميل كل شيء
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const user = authService.getCurrentUser();
 
         if (user) {
@@ -138,8 +146,12 @@ function App() {
           setIsAuthenticated(false);
           setCurrentUser(null);
         }
+        
+        setIsInitialized(true);
+        console.log('App initialized successfully');
       } catch (err) {
         console.error('فشلت عملية تهيئة التطبيق:', err);
+        setIsInitialized(true); // استمر حتى مع الأخطاء
       } finally {
         setIsLoading(false);
       }
@@ -178,7 +190,7 @@ function App() {
   };
 
   // === شاشة التحميل ===
-  if (isLoading) {
+  if (isLoading || !isInitialized) {
     return (
       <PeriodProvider>
         <LoadingPage />
@@ -324,34 +336,36 @@ function App() {
         <div className={`flex-1 ${isSidebarOpen ? 'mr-56 md:mr-64' : 'mr-0'} transition-all duration-300`}>
           <div className="p-2 md:p-6">
             <div className="bg-white rounded-lg md:rounded-xl shadow-luxury min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-8rem)] border border-beige-200">
-              {/* رسالة عدم وجود صلاحية */}
-              {!hasPermissionForTab(activeTab) ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <Lock className="h-16 w-16 text-royal-300 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-royal-800 mb-2">غير مصرح لك</h3>
-                    <p className="text-royal-400">ليس لديك صلاحية للوصول إلى هذه الصفحة</p>
+              <Suspense fallback={<LoadingScreen />}>
+                {/* رسالة عدم وجود صلاحية */}
+                {!hasPermissionForTab(activeTab) ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <Lock className="h-16 w-16 text-royal-300 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-royal-800 mb-2">غير مصرح لك</h3>
+                      <p className="text-royal-400">ليس لديك صلاحية للوصول إلى هذه الصفحة</p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                // عرض المحتوى حسب التبويب
-                <>
-                  {activeTab === 'dashboard' && <Dashboard />}
-                  {activeTab === 'unlocked-orders' && <UnlockedOrders />}
-                  {activeTab === 'locked-orders' && <LockedOrders />}
-                  {activeTab === 'shipping-companies' && <ShippingCompanies />}
-                  {activeTab === 'payment-methods' && <PaymentMethodsDashboard />}
-                  {activeTab === 'employee-balances' && <EmployeeBalances />}
-                  {activeTab === 'suppliers' && <Suppliers />}
-                  {activeTab === 'supplier-ledger' && <SupplierLedger />}
-                  {activeTab === 'expenses' && <Expenses />}
-                  {activeTab === 'inventory' && <Inventory />}
-                  {activeTab === 'cancelled-orders' && <CancelledOrders />}
-                  {activeTab === 'reports' && <Reports />}
-                  {activeTab === 'custom-reports' && <CustomReports />}
-                  {activeTab === 'users' && <UserManagement />}
-                </>
-              )}
+                ) : (
+                  // عرض المحتوى حسب التبويب
+                  <>
+                    {activeTab === 'dashboard' && <Dashboard />}
+                    {activeTab === 'unlocked-orders' && <UnlockedOrders />}
+                    {activeTab === 'locked-orders' && <LockedOrders />}
+                    {activeTab === 'shipping-companies' && <ShippingCompanies />}
+                    {activeTab === 'payment-methods' && <PaymentMethodsDashboard />}
+                    {activeTab === 'employee-balances' && <EmployeeBalances />}
+                    {activeTab === 'suppliers' && <Suppliers />}
+                    {activeTab === 'supplier-ledger' && <SupplierLedger />}
+                    {activeTab === 'expenses' && <Expenses />}
+                    {activeTab === 'inventory' && <Inventory />}
+                    {activeTab === 'cancelled-orders' && <CancelledOrders />}
+                    {activeTab === 'reports' && <Reports />}
+                    {activeTab === 'custom-reports' && <CustomReports />}
+                    {activeTab === 'users' && <UserManagement />}
+                  </>
+                )}
+              </Suspense>
             </div>
           </div>
         </div>
