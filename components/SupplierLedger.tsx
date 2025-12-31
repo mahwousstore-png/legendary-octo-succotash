@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Truck, Trash2, Clock, AlertCircle } from 'lucide-react';
+import { DollarSign, Truck, Trash2, Clock, AlertCircle, Eye, Download } from 'lucide-react';
 import { authService } from '../lib/auth';
 import { 
   fetchSupplierLedgers, 
@@ -12,6 +12,10 @@ import {
 import { formatDateTime } from '../lib/dateFormatter';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const SupplierLedger = () => {
   const [ledgers, setLedgers] = useState<SupplierLedgerType[]>([]);
@@ -19,6 +23,7 @@ const SupplierLedger = () => {
   const [selectedLedger, setSelectedLedger] = useState<SupplierLedgerType | null>(null);
   const [payments, setPayments] = useState<SupplierPayment[]>([]);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [employeeBalance, setEmployeeBalance] = useState(0);
@@ -114,6 +119,96 @@ const SupplierLedger = () => {
     }
   };
 
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('مستحقات الموردين');
+
+    // إعداد الأعمدة
+    worksheet.columns = [
+      { header: 'المورد', key: 'supplier', width: 20 },
+      { header: 'رقم الطلب', key: 'order_id', width: 15 },
+      { header: 'التفاصيل', key: 'details', width: 30 },
+      { header: 'المبلغ الأصلي', key: 'amount', width: 15 },
+      { header: 'المسدد', key: 'paid', width: 15 },
+      { header: 'المتبقي', key: 'remaining', width: 15 },
+      { header: 'تم بواسطة', key: 'created_by', width: 20 },
+      { header: 'التاريخ', key: 'date', width: 20 }
+    ];
+
+    // تنسيق الرأس
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    };
+
+    // إضافة البيانات
+    ledgers.forEach(ledger => {
+      worksheet.addRow({
+        supplier: ledger.supplier_name,
+        order_id: ledger.order_id || '-',
+        details: ledger.product_details,
+        amount: ledger.amount,
+        paid: ledger.paid_amount,
+        remaining: ledger.remaining_amount,
+        created_by: ledger.locked_by,
+        date: formatDateTime(ledger.created_at)
+      });
+    });
+
+    // إضافة الإجماليات
+    const totalAmount = ledgers.reduce((sum, l) => sum + l.amount, 0);
+    const totalPaid = ledgers.reduce((sum, l) => sum + l.paid_amount, 0);
+    const totalRemaining = ledgers.reduce((sum, l) => sum + l.remaining_amount, 0);
+
+    worksheet.addRow({});
+    const summaryRow = worksheet.addRow({
+      supplier: 'الإجمالي',
+      amount: totalAmount,
+      paid: totalPaid,
+      remaining: totalRemaining
+    });
+    summaryRow.font = { bold: true };
+    summaryRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFD700' }
+    };
+
+    // حفظ الملف
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `مستحقات_الموردين_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success('تم تصدير البيانات إلى Excel بنجاح');
+  };
+
+  const exportToPDF = async () => {
+    const previewElement = document.getElementById('supplier-ledger-preview');
+    if (!previewElement) return;
+
+    try {
+      const canvas = await html2canvas(previewElement, {
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`مستحقات_الموردين_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('تم تصدير التقرير إلى PDF بنجاح');
+    } catch (error) {
+      console.error('Error exporting to PDF:', error);
+      toast.error('فشل تصدير التقرير إلى PDF');
+    }
+  };
+
   if (!currentUser) {
     return (
       <div className="p-6 text-center">
@@ -127,9 +222,18 @@ const SupplierLedger = () => {
   return (
     <div className="p-6 min-h-screen bg-gray-50">
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Truck className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">مستحقات الموردين</h1>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
+          <div className="flex items-center gap-3">
+            <Truck className="h-8 w-8 text-blue-600" />
+            <h1 className="text-3xl font-bold text-gray-900">مستحقات الموردين</h1>
+          </div>
+          <button
+            onClick={() => setShowPreview(true)}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+          >
+            <Eye className="h-5 w-5" />
+            <span>معاينة وتصدير</span>
+          </button>
         </div>
         <p className="text-gray-600">إدارة المستحقات والسدادات</p>
       </div>
@@ -371,6 +475,120 @@ const SupplierLedger = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* مودال معاينة التقرير */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-auto">
+            {/* الرأس */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Truck className="h-6 w-6 text-blue-600" />
+                معاينة تقرير مستحقات الموردين
+              </h2>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="إغلاق المعاينة"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* المحتوى */}
+            <div id="supplier-ledger-preview" className="p-6">
+              {/* معلومات التقرير */}
+              <div className="mb-6 bg-blue-50 p-4 rounded-lg">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">تقرير مستحقات الموردين</h3>
+                <p className="text-sm text-gray-600">تاريخ التقرير: {formatDateTime(new Date().toISOString())}</p>
+                <p className="text-sm text-gray-600">عدد المستحقات: {ledgers.length}</p>
+              </div>
+
+              {/* الإحصائيات */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">إجمالي المبالغ الأصلية</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {ledgers.reduce((sum, l) => sum + l.amount, 0).toFixed(2)} ر.س
+                  </p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">إجمالي المسدد</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {ledgers.reduce((sum, l) => sum + l.paid_amount, 0).toFixed(2)} ر.س
+                  </p>
+                </div>
+                <div className="bg-red-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">إجمالي المتبقي</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {ledgers.reduce((sum, l) => sum + l.remaining_amount, 0).toFixed(2)} ر.س
+                  </p>
+                </div>
+              </div>
+
+              {/* الجدول */}
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border border-gray-300 px-4 py-2 text-right">المورد</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">رقم الطلب</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">التفاصيل</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">المبلغ الأصلي</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">المسدد</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">المتبقي</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">تم بواسطة</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">التاريخ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ledgers.map((ledger) => (
+                      <tr key={ledger.id} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 px-4 py-2">{ledger.supplier_name}</td>
+                        <td className="border border-gray-300 px-4 py-2">{ledger.order_id || '-'}</td>
+                        <td className="border border-gray-300 px-4 py-2 text-sm">{ledger.product_details}</td>
+                        <td className="border border-gray-300 px-4 py-2 text-right">{ledger.amount.toFixed(2)} ر.س</td>
+                        <td className="border border-gray-300 px-4 py-2 text-right text-green-600">{ledger.paid_amount.toFixed(2)} ر.س</td>
+                        <td className="border border-gray-300 px-4 py-2 text-right">
+                          <span className={ledger.remaining_amount > 0 ? 'text-red-600 font-semibold' : 'text-green-600'}>
+                            {ledger.remaining_amount.toFixed(2)} ر.س
+                          </span>
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2">{ledger.locked_by}</td>
+                        <td className="border border-gray-300 px-4 py-2 text-sm">{formatDateTime(ledger.created_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* أزرار التصدير */}
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex flex-wrap gap-3">
+              <button
+                onClick={exportToExcel}
+                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg"
+              >
+                <Download className="h-5 w-5" />
+                <span>تصدير إلى Excel</span>
+              </button>
+              <button
+                onClick={exportToPDF}
+                className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-md hover:shadow-lg"
+              >
+                <Download className="h-5 w-5" />
+                <span>تصدير إلى PDF</span>
+              </button>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="flex items-center gap-2 px-6 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors"
+              >
+                إغلاق
+              </button>
+            </div>
           </div>
         </div>
       )}
