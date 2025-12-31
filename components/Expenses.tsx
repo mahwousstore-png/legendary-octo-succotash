@@ -411,9 +411,8 @@ const Expenses: React.FC = () => {
         
         let balanceTransactionId = null;
 
-        // If deducting from custody and user is admin, create debit transaction immediately
-        // For regular employees, the transaction will be created upon approval
-        if (deductFromCustody && isAdmin) {
+        // خصم المصروف من عهدة الموظف فقط (ليس المدير)
+        if (deductFromCustody && !isAdmin) {
           const { data: transaction, error: transactionError } = await supabase
             .from('employee_balance_transactions')
             .insert({
@@ -450,10 +449,10 @@ const Expenses: React.FC = () => {
           .insert([expenseToInsert]);
         if (error) throw error;
 
-        if (deductFromCustody && isAdmin) {
+        if (deductFromCustody && !isAdmin) {
           const newBalance = employeeBalance - amount;
           toast.success(
-            `تم خصم المصروف من عهدتك بنجاح. الرصيد المتبقي: ${newBalance.toLocaleString('EN-US')} ر.س`
+            `تم خصم المصروف من عهدتك بنجاح. الرصيد المتبقي: ${newBalance.toLocaleString('ar-SA')} ر.س`
           );
           await fetchEmployeeBalance();
         } else {
