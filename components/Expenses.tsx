@@ -351,6 +351,19 @@ const Expenses: React.FC = () => {
     }
   };
 
+  // تطبيق الفلتر الزمني الشامل أولاً
+  const periodFilteredExpenses = usePeriodFilter(expenses, 'date');
+
+  const filteredExpenses = useMemo(() => {
+    let filtered = periodFilteredExpenses.filter(expense => {
+      const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        expense.category.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = filterCategory === 'all' || expense.category === filterCategory;
+      return matchesSearch && matchesCategory;
+    });
+    return filtered;
+  }, [periodFilteredExpenses, searchTerm, filterCategory]);
+
   const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
   const paginatedExpenses = filteredExpenses.slice(
     (currentPage - 1) * itemsPerPage,
@@ -612,19 +625,6 @@ const Expenses: React.FC = () => {
       to: today.toISOString().split('T')[0]
     };
   };
-
-  // تطبيق الفلتر الزمني الشامل أولاً
-  const periodFilteredExpenses = usePeriodFilter(expenses, 'date');
-
-  const filteredExpenses = useMemo(() => {
-    let filtered = periodFilteredExpenses.filter(expense => {
-      const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expense.category.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = filterCategory === 'all' || expense.category === filterCategory;
-      return matchesSearch && matchesCategory;
-    });
-    return filtered;
-  }, [periodFilteredExpenses, searchTerm, filterCategory]);
 
   // فلتر المصروفات حسب الحالة
   const approvedExpenses = filteredExpenses.filter(exp => exp.status === 'approved');
