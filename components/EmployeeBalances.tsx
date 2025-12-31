@@ -266,15 +266,25 @@ const EmployeeAdvances: React.FC = () => {
       // عند إضافة سجل في expenses. بما أننا لا نملك صلاحية تعديل الـ DB، سنقوم بإضافة المصروف أولاً ثم الخصم.
       
       // 1. إضافة المصروف في جدول expenses
+      // نحتاج لإيجاد اسم الفئة من المعرف
+      const selectedCategory = categories.find(cat => cat.id === expenseCategory);
+      if (!selectedCategory) {
+        toast.error('الرجاء اختيار فئة صحيحة');
+        return;
+      }
+
       const { data: expenseResult, error: expenseError } = await supabase
         .from('expenses')
         .insert([{
           description: expenseDescription,
           amount: amount,
-          category_id: expenseCategory,
+          category: selectedCategory.name, // استخدام اسم الفئة وليس المعرف
           date: expenseDate,
           created_by: currentUser.id,
-          status: 'approved' // تلقائياً معتمد
+          user_id: currentUser.id,
+          status: 'approved',
+          approved_by: currentUser.id,
+          approved_at: new Date().toISOString()
         }])
         .select()
         .single();
@@ -284,7 +294,7 @@ const EmployeeAdvances: React.FC = () => {
         throw expenseError;
       }
 
-      // 2. محاولة خصم المبلغ من عهدة الموظف (مع معالجة الأخطاء الصامتة)
+      // 2. خصم المبلغ من عهدة الموظف فوراً ومباشرة
       const { error: balanceError } = await supabase
         .from('employee_balance_transactions')
         .insert([{
@@ -293,13 +303,15 @@ const EmployeeAdvances: React.FC = () => {
           type: 'debit',
           reason: `مصروف: ${expenseDescription}`,
           transaction_date: expenseDate,
-          // related_expense_id: expenseResult.id // إزالة الربط المعقد
+          created_by: currentUser.id,
+          status: 'confirmed',
+          confirmed_at: new Date().toISOString(),
+          confirmed_by: currentUser.id
         }]);
 
       if (balanceError) {
         console.error('خطأ في خصم العهدة (transactions):', balanceError);
-        // إرسال تنبيه بسيط للمستخدم بأن الخصم فشل
-        toast.error(`تم إضافة المصروف بنجاح، لكن فشل خصمه من العهدة.`);
+        toast.error(`تم إضافة المصروف بنجاح، لكن فشل خصمه من العهدة: ${balanceError.message}`);
       } else {
         toast.success(`تم إضافة المصروف وخصم ${amount.toFixed(2)} ر.س من عهدتك بنجاح`);
       }
