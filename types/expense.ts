@@ -11,6 +11,10 @@ export interface Expense {
   user_id?: string;
   balance_transaction_id?: string;
   deducted_from_custody?: boolean;
+  status?: 'pending' | 'approved' | 'rejected';
+  approved_by?: string;
+  approved_at?: string;
+  rejection_reason?: string;
 }
 
 export interface EmployeeBalanceTransaction {

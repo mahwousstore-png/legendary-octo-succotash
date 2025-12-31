@@ -1,16 +1,7 @@
 // src/hooks/useExpenses.ts
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-
-export interface Expense {
-  id: string;
-  description: string;
-  amount: number;
-  category: string;
-  date: string;
-  created_at?: string;
-  updated_at?: string;
-}
+import { Expense } from '../types/expense';
 
 export const useExpenses = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
