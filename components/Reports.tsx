@@ -10,6 +10,9 @@ import { useExpenses } from '../hooks/useExpenses';
 import { Order, Product } from '../types/order';
 import { Expense } from '../types/expense';
 import ReactECharts from 'echarts-for-react';
+import GlobalPeriodFilter from './GlobalPeriodFilter';
+import { usePeriod } from '../contexts/PeriodContext';
+
 interface PaymentMethod {
   id: string;
   name: string;
@@ -46,9 +49,7 @@ const getUTCCardinalDate = (date: string | Date) => {
 const Reports: React.FC = () => {
   const { orders, loading: ordersLoading, error: ordersError } = useOrders();
   const { expenses, loading: expensesLoading, error: expensesError } = useExpenses();
-  const [dateRange, setDateRange] = useState<'all' | 'today' | 'yesterday' | 'week' | 'month' | 'custom'>('all');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const { selectedPeriod, getDateRange } = usePeriod();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [paymentReceipts, setPaymentReceipts] = useState<PaymentReceipt[]>([]);
@@ -87,52 +88,35 @@ const Reports: React.FC = () => {
     };
     fetchData();
   }, []);
-  // فلترة حسب المدة + عدد الأيام
+  
+  // فلترة حسب المدة + عدد الأيام (استخدام PeriodContext)
   const { filteredOrders, filteredExpenses, filteredCancelledOrders, daysCount } = useMemo(() => {
-    const now = new Date();
-    const today = getUTCCardinalDate(now);
-    const yesterday = getUTCCardinalDate(now);
-    yesterday.setDate(today.getDate() - 1); // Adjust after normalization
-    let start: Date = new Date(0); // Epoch for 'all'
-    let end: Date = new Date(8640000000000000); // Max possible date for 'all'
-    let days = 0;
-    if (dateRange === 'today') {
-      start = today;
-      end = getUTCCardinalDate(today); // Today's date (UTC)
-      end.setDate(end.getDate() + 1); // Exclude the next day (end of today)
-      days = 1;
-    } else if (dateRange === 'yesterday') {
-      start = yesterday;
-      end = getUTCCardinalDate(today); // Today's date (UTC), acts as end for yesterday
-      days = 1;
-    } else if (dateRange === 'week') {
-      start = getUTCCardinalDate(new Date(now.getTime() - 6 * 86400000)); // 7 days ago including today
-      end = getUTCCardinalDate(today); // Today's date (UTC)
-      end.setDate(end.getDate() + 1); // Exclude the next day (end of today)
-      days = 7;
-    } else if (dateRange === 'month') {
-      start = getUTCCardinalDate(new Date(now.getFullYear(), now.getMonth(), 1)); // Start of current month (UTC)
-      end = getUTCCardinalDate(new Date(now.getFullYear(), now.getMonth() + 1, 1)); // Start of next month (UTC)
-      days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(); // Days in current month
-    } else if (dateRange === 'custom' && startDate && endDate) {
-      start = getUTCCardinalDate(new Date(startDate));
-      end = getUTCCardinalDate(new Date(endDate));
-      end.setDate(end.getDate() + 1); // Include the end date fully by making end of next day
-      days = Math.ceil((end.getTime() - start.getTime()) / 86400000);
-    } else { // 'all' range
-      days = 9999;
+    if (selectedPeriod === 'all_time') {
+      // Return all data when all_time is selected
+      return {
+        filteredOrders: lockedOrders,
+        filteredExpenses: expenses,
+        filteredCancelledOrders: cancelledOrders,
+        daysCount: 9999,
+      };
     }
+
+    const { start, end } = getDateRange();
+    
     const filterByDate = (date: string | Date) => {
-      const d = getUTCCardinalDate(date);
-      return d >= start && d < end;
+      const d = new Date(date);
+      return d >= start && d <= end;
     };
+
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    
     return {
       filteredOrders: lockedOrders.filter(o => filterByDate(o.order_date)),
       filteredExpenses: expenses.filter(e => filterByDate(e.date)),
       filteredCancelledOrders: cancelledOrders.filter(o => filterByDate(o.order_date)),
       daysCount: days,
     };
-  }, [lockedOrders, expenses, cancelledOrders, dateRange, startDate, endDate]);
+  }, [lockedOrders, expenses, cancelledOrders, selectedPeriod, getDateRange]);
   // دالة للحصول على رسوم الدفع
   const getPaymentFee = (paymentMethodCode: string | undefined, totalPrice: number): { fee: number; percentage: number; fixed: number } => {
     if (!paymentMethodCode) return { fee: 0, percentage: 0, fixed: 0 };
@@ -241,43 +225,73 @@ const Reports: React.FC = () => {
   const error = ordersError || expensesError;
   // === رسوم بيانية (فقط إذا أكثر من يوم) ===
   const dailyData = useMemo(() => {
-    // Determine the actual start and end dates used by the overarching date range filter.
-    const now = new Date();
-    const today = getUTCCardinalDate(now);
-    const yesterday = getUTCCardinalDate(now);
-    yesterday.setDate(today.getDate() - 1);
-
-    let chartRenderStart: Date = new Date(0);
-    let chartRenderEnd: Date = new Date(8640000000000000);
-    if (dateRange === 'today') {
-      chartRenderStart = today; chartRenderEnd = getUTCCardinalDate(today); chartRenderEnd.setDate(chartRenderEnd.getDate() + 1);
-    } else if (dateRange === 'yesterday') {
-      chartRenderStart = yesterday; chartRenderEnd = getUTCCardinalDate(today);
-    } else if (dateRange === 'week') {
-      chartRenderStart = getUTCCardinalDate(new Date(now.getTime() - 6 * 86400000)); chartRenderEnd = getUTCCardinalDate(today); chartRenderEnd.setDate(chartRenderEnd.getDate() + 1);
-    } else if (dateRange === 'month') {
-      chartRenderStart = getUTCCardinalDate(new Date(now.getFullYear(), now.getMonth(), 1)); chartRenderEnd = getUTCCardinalDate(new Date(now.getFullYear(), now.getMonth() + 1, 1));
-    } else if (dateRange === 'custom' && startDate && endDate) {
-      chartRenderStart = getUTCCardinalDate(new Date(startDate)); chartRenderEnd = getUTCCardinalDate(new Date(endDate)); chartRenderEnd.setDate(chartRenderEnd.getDate() + 1);
-    } else { // 'all' dateRange
+    // استخدام PeriodContext للحصول على نطاق التواريخ
+    if (selectedPeriod === 'all_time') {
+      // For all_time, get date range from all available data
       const allDates = [...orders.map(o => getUTCCardinalDate(o.order_date)), ...expenses.map(e => getUTCCardinalDate(e.date))];
+      if (allDates.length === 0) return [];
 
-      if (allDates.length > 0) {
-        const minTimestamp = Math.min(...allDates.map(d => d.getTime()));
-        const maxTimestamp = Math.max(...allDates.map(d => d.getTime()));
-        chartRenderStart = new Date(minTimestamp);
-        chartRenderEnd = new Date(maxTimestamp);
-        chartRenderEnd.setDate(chartRenderEnd.getDate() + 1); // Ensure full day
-      } else {
-        return []; // No data at all
+      const minTimestamp = Math.min(...allDates.map(d => d.getTime()));
+      const maxTimestamp = Math.max(...allDates.map(d => d.getTime()));
+      let chartRenderStart = new Date(minTimestamp);
+      let chartRenderEnd = new Date(maxTimestamp);
+      chartRenderEnd.setDate(chartRenderEnd.getDate() + 1); // Ensure full day
+
+      const map = new Map<string, any>();
+      const addToMap = (dateKey: string, key: string, value: number) => {
+        if (!map.has(dateKey)) {
+          map.set(dateKey, { date: dateKey, locked: 0, unlocked: 0, sales: 0, costs: 0, profit: 0, orders: 0 });
+        }
+        const entry = map.get(dateKey)!;
+        entry[key] += value;
+        if (key === 'locked' || key === 'unlocked') entry.orders += 1;
+      };
+
+      orders.forEach(o => {
+        const date = new Date(o.order_date).toLocaleDateString('en-GB');
+        if (o.is_locked) {
+          const profit = calculateNetProfit(o);
+          addToMap(date, 'locked', o.total_price || 0);
+          addToMap(date, 'sales', o.total_price || 0);
+          addToMap(date, 'profit', profit);
+          const cost = (o.total_price || 0) - profit;
+          addToMap(date, 'costs', cost);
+        } else if (o.status !== 'ملغي') {
+          addToMap(date, 'unlocked', o.total_price || 0);
+        }
+      });
+
+      expenses.forEach(e => {
+        const date = new Date(e.date).toLocaleDateString('en-GB');
+        addToMap(date, 'costs', e.amount || 0);
+      });
+
+      // Populate all days between start and end
+      let iterDate = getUTCCardinalDate(chartRenderStart);
+      const finalChartRenderEnd = getUTCCardinalDate(chartRenderEnd);
+      while (iterDate < finalChartRenderEnd) {
+        const dateKey = iterDate.toLocaleDateString('en-GB');
+        if (!map.has(dateKey)) {
+          map.set(dateKey, { date: dateKey, locked: 0, unlocked: 0, sales: 0, costs: 0, profit: 0, orders: 0 });
+        }
+        iterDate.setDate(iterDate.getDate() + 1);
       }
+
+      return Array.from(map.values()).sort((a, b) => {
+        const [dayA, monthA, yearA] = a.date.split('/').map(Number);
+        const [dayB, monthB, yearB] = b.date.split('/').map(Number);
+        return new Date(yearA, monthA - 1, dayA).getTime() - new Date(yearB, monthB - 1, dayB).getTime();
+      });
     }
-    // Only proceed to generate chart data if daysCount is more than 1
-    // (single-point charts usually don't make sense as line charts).
-    // Or if there is data at all if for instance a custom single day range is picked.
-    if (daysCount <= 1 && dateRange !== 'custom') { // Allow custom 1-day range to potentially show 1 point, but for preset only if > 1 day.
-      // If it's a single custom day, let the logic below process it if data exists.
+
+    // For specific periods, use the period context
+    const { start, end } = getDateRange();
+    
+    if (daysCount <= 1) {
+      // For single day periods, don't show chart
+      return [];
     }
+
     const map = new Map<string, any>();
     const addToMap = (dateKey: string, key: string, value: number) => {
       if (!map.has(dateKey)) {
@@ -287,11 +301,13 @@ const Reports: React.FC = () => {
       entry[key] += value;
       if (key === 'locked' || key === 'unlocked') entry.orders += 1;
     };
+
     const filterForChartRendering = (orderDate: string | Date) => {
-      const d = getUTCCardinalDate(orderDate);
-      return d >= getUTCCardinalDate(chartRenderStart) && d < getUTCCardinalDate(chartRenderEnd);
+      const d = new Date(orderDate);
+      return d >= start && d <= end;
     };
-    orders.forEach(o => { // Process ALL orders that fall into the `chartRenderStart` and `chartRenderEnd` range.
+
+    orders.forEach(o => {
       if (filterForChartRendering(o.order_date)) {
         const date = new Date(o.order_date).toLocaleDateString('en-GB');
         if (o.is_locked === true) {
@@ -307,10 +323,18 @@ const Reports: React.FC = () => {
         }
       }
     });
-    // Populate all days between chartRenderStart and chartRenderEnd to ensure continuous chart line.
-    let iterDate = getUTCCardinalDate(chartRenderStart);
-    const finalChartRenderEnd = getUTCCardinalDate(chartRenderEnd); // Normalize end date once
-    while (iterDate < finalChartRenderEnd) {
+
+    expenses.forEach(e => {
+      if (filterForChartRendering(e.date)) {
+        const date = new Date(e.date).toLocaleDateString('en-GB');
+        addToMap(date, 'costs', e.amount || 0);
+      }
+    });
+
+    // Populate all days between start and end to ensure continuous chart line
+    let iterDate = new Date(start);
+    const finalEnd = new Date(end);
+    while (iterDate <= finalEnd) {
       const dateStr = iterDate.toLocaleDateString('en-GB');
       if (!map.has(dateStr)) {
         map.set(dateStr, { date: dateStr, locked: 0, unlocked: 0, sales: 0, costs: 0, profit: 0, orders: 0 });
@@ -324,19 +348,15 @@ const Reports: React.FC = () => {
       const [d2, m2, y2] = b.date.split('/').map(Number);
       return new Date(y1, m1 - 1, d1).getTime() - new Date(y2, m2 - 1, d2).getTime();
     });
-    // If after all processing, there's no data or only a single day for line charts, return empty
-    if (finalDailyData.length <= 1 && daysCount !== 9999) { // Don't filter "all" just because it might be sparse.
-      return [];
-    }
+    
     return finalDailyData;
   }, [
-    orders, // All orders for raw data and for 'all' date range detection
-    expenses, // All expenses for 'all' date range detection (if any)
-    dateRange,
-    startDate,
-    endDate,
-    daysCount, // Affects when charts are rendered
-    calculateNetProfit // Function dependency
+    orders,
+    expenses,
+    selectedPeriod,
+    getDateRange,
+    daysCount,
+    calculateNetProfit
   ]);
   const chartOptions = (title: string, dataKey: string, color: string) => ({
     tooltip: { trigger: 'axis' },
@@ -1337,37 +1357,12 @@ const Reports: React.FC = () => {
         </div>
         <p className="text-sm md:text-base text-gray-600 mt-1 md:mt-2">تحليل شامل ومهني للأداء المالي والتشغيلي</p>
       </div>
+
+      <GlobalPeriodFilter />
+
       {/* الفلاتر والتصدير */}
       <div className="bg-white border border-gray-200 rounded-lg p-3 md:p-4 mb-4 md:mb-6 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-3 md:gap-4 items-start lg:items-center justify-between">
-          <div className="flex flex-wrap gap-1.5 md:gap-2 w-full lg:w-auto flex-grow">
-            {['all', 'today', 'yesterday', 'week', 'month'].map((val) => (
-              <button
-                key={val}
-                onClick={() => { setDateRange(val as any); if (val !== 'custom') { setStartDate(''); setEndDate(''); } }}
-                className={`px-2 md:px-3 py-1.5 md:py-2 rounded text-xs md:text-sm font-semibold transition-colors border ${dateRange === val
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50'}`}
-              >
-                {val === 'all' ? 'الكل' : val === 'today' ? 'اليوم' : val === 'yesterday' ? 'أمس' : val === 'week' ? 'أسبوع' : 'شهر'}
-              </button>
-            ))}
-            <button
-              onClick={() => setDateRange('custom')}
-              className={`px-2 md:px-3 py-1.5 md:py-2 rounded text-xs md:text-sm font-semibold transition-colors border flex items-center gap-1 ${dateRange === 'custom'
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50'}`}
-            >
-              مخصص
-            </button>
-          </div>
-          {dateRange === 'custom' && (
-            <div className="flex items-center gap-2 w-full lg:w-auto">
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-2 border border-gray-300 rounded text-sm flex-1 focus:ring-2 focus:ring-blue-500" />
-              <span className="text-gray-600 font-medium text-sm whitespace-nowrap">إلى</span>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-2 border border-gray-300 rounded text-sm flex-1 focus:ring-2 focus:ring-blue-500" />
-            </div>
-          )}
           {/* Export Buttons */}
           <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
             <button onClick={exportToExcel} className="px-3 md:px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-semibold shadow-sm text-xs md:text-sm">
