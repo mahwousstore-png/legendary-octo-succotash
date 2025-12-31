@@ -557,15 +557,17 @@ const EmployeeAdvances: React.FC = () => {
         <GlobalPeriodFilter />
 
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl md:rounded-2xl p-4 md:p-6 mb-4 md:mb-8 shadow-sm">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 md:mb-6">
             <h3 className="text-lg md:text-xl font-bold text-gray-800">ملخص العهده</h3>
-            <button
-              onClick={() => setShowTransactionModal(true)}
-              className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-3 md:px-5 py-2 md:py-3 rounded-lg md:rounded-xl hover:from-amber-700 hover:to-orange-700 flex items-center space-x-2 shadow-md transition-all w-full sm:w-auto justify-center text-sm md:text-base"
-            >
-              <Banknote className="h-4 w-4 md:h-5 md:w-5" />
-              <span className="font-medium">عملية جديدة</span>
-            </button>
+            {currentUser?.role === 'admin' && (
+              <button
+                onClick={() => setShowTransactionModal(true)}
+                className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-3 md:px-5 py-2 md:py-3 rounded-lg md:rounded-xl hover:from-amber-700 hover:to-orange-700 flex items-center space-x-2 shadow-md transition-all w-full sm:w-auto justify-center text-sm md:text-base"
+              >
+                <Banknote className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="font-medium">عملية جديدة</span>
+              </button>
+            )}
           </div>
 
           <div className="space-y-3 md:space-y-4">
