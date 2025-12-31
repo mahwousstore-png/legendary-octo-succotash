@@ -43,6 +43,7 @@ const LockedOrders: React.FC = () => {
   const [editedOrder, setEditedOrder] = useState<Order | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
@@ -524,6 +525,11 @@ const LockedOrders: React.FC = () => {
             <Download className="h-4 w-4 md:h-5 md:w-5" />
             <span className="hidden sm:inline">تصدير إلى Excel</span>
             <span className="sm:hidden">تصدير</span>
+          </button>
+          <button onClick={() => setShowPreview(true)} className="flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-green-600 text-white rounded-lg md:rounded-xl hover:bg-green-700 text-sm md:text-base min-h-[44px]">
+            <Eye className="h-4 w-4 md:h-5 md:w-5" />
+            <span className="hidden sm:inline">معاينة</span>
+            <span className="sm:inline">معاينة</span>
           </button>
         </div>
       </div>
@@ -1114,6 +1120,132 @@ const LockedOrders: React.FC = () => {
           <Lock className="h-20 w-20 text-gray-300 mx-auto mb-6" />
           <h3 className="text-2xl font-bold text-gray-700">لا توجد طلبات مقفلة حاليًا</h3>
           <p className="text-gray-500 mt-3">سيظهر هنا كل طلب بعد إكمال تحليل التكاليف وقفله</p>
+        </div>
+      )}
+
+      {/* مودال معاينة التقرير */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-auto">
+            {/* الرأس */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Lock className="h-6 w-6 text-green-600" />
+                معاينة تقرير الطلبات المقفلة
+              </h2>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="إغلاق المعاينة"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* المحتوى */}
+            <div id="locked-orders-preview" className="p-6">
+              {/* معلومات التقرير */}
+              <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">تقرير الطلبات المقفلة</h3>
+                <p className="text-sm text-gray-600">تاريخ التقرير: {formatDateTime(new Date().toISOString())}</p>
+                <p className="text-sm text-gray-600">عدد الطلبات: {lockedOrders.length}</p>
+              </div>
+
+              {/* الإحصائيات */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">إجمالي المبيعات</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {formatNumber(lockedOrders.reduce((sum, o) => sum + (o.total_price || 0), 0))} ر.س
+                  </p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">صافي الربح</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatNumber(lockedOrders.reduce((sum, o) => sum + calculateNetProfit(o).netProfit, 0))} ر.س
+                  </p>
+                </div>
+                <div className="bg-orange-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">رسوم الدفع</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {formatNumber(lockedOrders.reduce((sum, o) => sum + getPaymentFee(o.payment_method, o.total_price || 0).fee, 0))} ر.س
+                  </p>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">متوسط هامش الربح</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {formatPercent(lockedOrders.length > 0 ? lockedOrders.reduce((sum, o) => sum + calculateNetProfit(o).margin, 0) / lockedOrders.length : 0)}%
+                  </p>
+                </div>
+              </div>
+
+              {/* الجدول */}
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+                      <th className="border border-gray-300 px-3 py-2 text-right">رقم الطلب</th>
+                      <th className="border border-gray-300 px-3 py-2 text-right">العميل</th>
+                      <th className="border border-gray-300 px-3 py-2 text-right">طريقة الدفع</th>
+                      <th className="border border-gray-300 px-3 py-2 text-right">المبيعات</th>
+                      <th className="border border-gray-300 px-3 py-2 text-right">رسوم الدفع</th>
+                      <th className="border border-gray-300 px-3 py-2 text-right">التكاليف</th>
+                      <th className="border border-gray-300 px-3 py-2 text-right">صافي الربح</th>
+                      <th className="border border-gray-300 px-3 py-2 text-right">الهامش %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lockedOrders.map((order) => {
+                      const { netProfit, margin, productCostInclTax, shippingWithTax } = calculateNetProfit(order);
+                      const { fee: paymentFee } = getPaymentFee(order.payment_method, order.total_price || 0);
+                      const totalCosts = productCostInclTax + shippingWithTax;
+                      
+                      return (
+                        <tr key={order.id} className="hover:bg-gray-50">
+                          <td className="border border-gray-300 px-3 py-2">#{order.order_number}</td>
+                          <td className="border border-gray-300 px-3 py-2">{order.customer_name}</td>
+                          <td className="border border-gray-300 px-3 py-2">{getPaymentMethodLabel(order.payment_method)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right font-semibold">{formatNumber(order.total_price || 0)} ر.س</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right text-orange-600">{formatNumber(paymentFee)} ر.س</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right text-red-600">{formatNumber(totalCosts)} ر.س</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">
+                            <span className={netProfit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                              {formatNumber(netProfit)} ر.س
+                            </span>
+                          </td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">
+                            <span className={margin >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                              {formatPercent(margin)}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* أزرار التصدير */}
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex flex-wrap gap-3">
+              <button
+                onClick={() => {
+                  exportToExcel();
+                  setShowPreview(false);
+                }}
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+              >
+                <Download className="h-5 w-5" />
+                <span>تصدير إلى Excel</span>
+              </button>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="flex items-center gap-2 px-6 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
