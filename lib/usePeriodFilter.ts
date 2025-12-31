@@ -20,13 +20,13 @@ export const usePeriodFilter = <T extends Record<string, any>>(
 
     return data.filter(item => {
       // تحديد الحقل المناسب
-      const field = dateField || 
+      const field = dateField || (
                    item.created_at ? 'created_at' :
                    item.order_date ? 'order_date' :
                    item.transaction_date ? 'transaction_date' :
                    item.payment_date ? 'payment_date' :
                    item.receipt_date ? 'receipt_date' :
-                   item.date ? 'date' : null;
+                   item.date ? 'date' : null);
 
       if (!field || !item[field]) return true;
 
