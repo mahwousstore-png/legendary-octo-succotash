@@ -307,18 +307,15 @@ const EmployeeAdvances: React.FC = () => {
           type: 'debit',
           reason: `مصروف: ${expenseDescription}`,
           transaction_date: expenseDate,
-          created_by: currentUser.id,
-          status: 'confirmed',
-          confirmed_at: new Date().toISOString(),
-          confirmed_by: currentUser.id,
           related_expense_id: expenseResult.id // ربط المصروف بالعملية
         }]);
 
       if (balanceError) {
         console.error('خطأ في خصم العهدة (transactions):', balanceError);
-        // إذا فشل الخصم، يجب حذف المصروف الذي تم إضافته
-        await supabase.from('expenses').delete().eq('id', expenseResult.id);
-        throw balanceError;
+        // لا نحذف المصروف لضمان استمرارية العمل، ونكتفي بتنبيه المستخدم
+        toast.error(`تم إضافة المصروف بنجاح، لكن فشل خصمه من العهدة: ${balanceError.message}`);
+        // لا نرفع الخطأ هنا، بل نتركه يكمل لضمان تحديث الواجهة
+        return;
       }
 
       toast.success(`تم إضافة المصروف وخصم ${amount.toFixed(2)} ر.س من عهدتك بنجاح`);
@@ -334,8 +331,6 @@ const EmployeeAdvances: React.FC = () => {
       console.error('خطأ في إضافة المصروف:', err);
       // إظهار رسالة الخطأ الدقيقة
       toast.error(`فشل في إضافة المصروف: ${err.message || 'خطأ غير معروف'}`);
-      // إظهار تنبيه قوي لضمان رؤية رسالة الخطأ
-      alert(`فشل في إضافة المصروف. يرجى تزويدنا بالتفاصيل التالية: \n\n${JSON.stringify(err, null, 2)}`);
     }
   };
 
