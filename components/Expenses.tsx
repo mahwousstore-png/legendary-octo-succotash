@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, CreditCard as Edit, Trash2, Calendar, DollarSign, Tag, FileText, TrendingUp, Search, Download, List, AlertCircle } from 'lucide-react';
+import { Plus, CreditCard as Edit, Trash2, Calendar, DollarSign, Tag, FileText, TrendingUp, Search, Download, List, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { authService } from '../lib/auth';
 import toast, { Toaster } from 'react-hot-toast';
@@ -672,10 +672,10 @@ const Expenses: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">إدارة المصروفات</h2>
             <p className="text-gray-600">تتبع وإدارة مصروفات عملك</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <button
               onClick={() => setShowCategoriesModal(true)}
-              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse"
+              className="flex-1 sm:flex-none bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 flex items-center justify-center space-x-2 space-x-reverse text-sm"
             >
               <List className="h-4 w-4" />
               <span>الفئات</span>
@@ -683,14 +683,14 @@ const Expenses: React.FC = () => {
             <button
               onClick={handleExportExpenses}
               disabled={filteredExpenses.length === 0}
-              className="border-2 border-blue-600 text-blue-600 bg-white px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors duration-200 flex items-center space-x-2 space-x-reverse disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-none border-2 border-blue-600 text-blue-600 bg-white px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors duration-200 flex items-center justify-center space-x-2 space-x-reverse disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               <Download className="h-4 w-4" />
-              <span>تصدير Excel</span>
+              <span>تصدير</span>
             </button>
             <button
               onClick={() => setShowAddForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse"
+              className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center space-x-2 space-x-reverse text-sm"
             >
               <Plus className="h-4 w-4" />
               <span>إضافة مصروف</span>
@@ -702,16 +702,16 @@ const Expenses: React.FC = () => {
       {/* الفلتر الزمني الشامل */}
       <GlobalPeriodFilter />
 
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-8">
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="grid grid-cols-1 gap-4 md:gap-6 mb-8">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="bg-blue-100 text-blue-600 p-3 rounded-lg">
-              <DollarSign className="h-6 w-6" />
+            <div className="bg-blue-100 text-blue-600 p-2 md:p-3 rounded-lg">
+              <DollarSign className="h-5 w-5 md:h-6 md:w-6" />
             </div>
             <TrendingUp className="h-5 w-5 text-blue-500" />
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">{totalExpenses.toLocaleString('EN-US')} ر.س</h3>
+            <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">{totalExpenses.toLocaleString('EN-US')} ر.س</h3>
             <p className="text-gray-600 text-sm">إجمالي المصروفات</p>
           </div>
         </div>
@@ -808,58 +808,60 @@ const Expenses: React.FC = () => {
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">سجلات المصروفات المعتمدة</h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto scrollbar-hide">
+          <table className="w-full min-w-[800px] md:min-w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الوصف</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الفئة</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المبلغ</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">أنشأ بواسطة</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
+                <th className="px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الوصف</th>
+                <th className="px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الفئة</th>
+                <th className="px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المبلغ</th>
+                <th className="hidden md:table-cell px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
+                <th className="hidden lg:table-cell px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">أنشأ بواسطة</th>
+                <th className="px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                <th className="px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {approvedExpenses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((expense) => (
                 <tr key={expense.id} className="hover:bg-gray-50 transition-colors duration-150">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <FileText className="h-4 w-4 text-gray-400 ml-3" />
+                      <FileText className="h-4 w-4 text-gray-400 ml-2 md:ml-3" />
                       <span
                         className="text-sm font-medium text-gray-900"
                         title={expense.description}
                       >
-                        {truncateText(expense.description, 50)}
+                        {truncateText(expense.description, window.innerWidth < 768 ? 20 : 50)}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       {expense.category}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {expense.amount.toLocaleString('EN-US')} ر.س
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {formatDateTime(expense.date)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {expense.created_by || 'غير محدد'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      معتمد
-                    </span>
-                    {expense.deducted_from_custody && (
-                      <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 mr-1">
-                        من العهدة
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col gap-1">
+                      <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] md:text-xs font-medium bg-green-100 text-green-800 w-fit">
+                        معتمد
                       </span>
-                    )}
+                      {expense.deducted_from_custody && (
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] md:text-xs font-medium bg-purple-100 text-purple-800 w-fit">
+                          من العهدة
+                        </span>
+                      )}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2 space-x-reverse">
                       <button
                         onClick={() => handleEdit(expense)}
