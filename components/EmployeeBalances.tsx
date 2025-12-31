@@ -964,7 +964,7 @@ const EmployeeAdvances: React.FC = () => {
                   <div className="flex gap-3 pt-4 border-t border-gold-500/30">
                     <button
                       type="submit"
-                      className="flex-1 bg-gradient-gold text-royal-900 py-3 px-6 rounded-xl font-bold shadow-gold hover:shadow-glow transition-all"fy-center space-x-2 shadow-md"
+                      className="flex-1 bg-gradient-gold text-royal-900 py-3 px-6 rounded-xl font-bold shadow-gold hover:shadow-glow transition-all flex items-center justify-center space-x-2"
                     >
                       <CheckCircle className="h-5 w-5" />
                       <span>إضافة المصروف</span>
