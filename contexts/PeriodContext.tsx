@@ -177,7 +177,21 @@ export const PeriodProvider = ({ children }: PeriodProviderProps) => {
 export const usePeriod = () => {
   const context = useContext(PeriodContext);
   if (!context) {
-    throw new Error('usePeriod must be used within PeriodProvider');
+    console.error('❌ usePeriod must be used within PeriodProvider');
+    // بدلاً من throw error، نرجع قيم افتراضية
+    return {
+      selectedPeriod: 'all_time' as PeriodType,
+      setSelectedPeriod: () => {},
+      customStartDate: '',
+      customEndDate: '',
+      setCustomStartDate: () => {},
+      setCustomEndDate: () => {},
+      getDateRange: () => ({
+        start: new Date(2020, 0, 1),
+        end: new Date()
+      }),
+      getPeriodLabel: () => 'كل الفترات'
+    };
   }
   return context;
 };
