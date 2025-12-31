@@ -11,7 +11,7 @@ export default {
           200: '#F3DDA0',
           300: '#EDCC7A',
           400: '#E4BD5B',
-          500: '#D4AF37', // Primary Gold
+          500: '#ddb562', // Primary Gold
           600: '#B8962E',
           700: '#9A7D26',
           800: '#7C641E',
@@ -27,7 +27,7 @@ export default {
           500: '#333333',
           600: '#222222',
           700: '#181818',
-          800: '#111111', // Royal Black
+          800: '#292929', // Royal Black
           900: '#000000', // Pure Black
         },
         // Soft Beige for borders

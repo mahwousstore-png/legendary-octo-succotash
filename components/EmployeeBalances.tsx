@@ -254,7 +254,7 @@ const EmployeeAdvances: React.FC = () => {
 
       resetForm();
       setShowTransactionModal(false);
-      await fetchEmployeesData(); // Refresh data
+      await fetchEmployeesData(); // تحديث بيانات العهدة بعد الخصم
     } catch (err: any) {
       console.error('خطأ في تسجيل العهده:', err);
       toast.error(err.message || 'فشل التسجيل');
@@ -317,9 +317,7 @@ const EmployeeAdvances: React.FC = () => {
       setExpenseCategory('');
       setExpenseDate(new Date().toISOString().split('T')[0]);
       setShowTransactionModal(false);
-      
-      // تحديث البيانات
-      await fetchEmployeesData();
+      await fetchEmployeesData(); // تحديث بيانات العهدة بعد الخصم
     } catch (err: any) {
       console.error('خطأ في إضافة المصروف:', err);
       toast.error(err.message || 'فشل في إضافة المصروف');
@@ -652,7 +650,7 @@ const EmployeeAdvances: React.FC = () => {
             </button>
             <button
               onClick={handleExportExcel}
-              className="bg-green-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center space-x-2 space-x-reverse text-sm md:text-base"
+              className="bg-green-500 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center space-x-2 space-x-reverse text-sm md:text-base"
             >
               <Download className="h-4 w-4" />
               <span>Excel</span>
@@ -683,7 +681,7 @@ const EmployeeAdvances: React.FC = () => {
               </span>
             </div>
             <div className="flex justify-between text-sm md:text-base">
-              <span className="text-royal-300 font-medium">عدد العمليات:</span>
+              <span className="text-royal-200 font-medium">عدد العمليات:</span>
               <span className="font-bold text-white">{filteredTransactions.length}</span>
             </div>
           </div>
@@ -728,14 +726,14 @@ const EmployeeAdvances: React.FC = () => {
                     <div className="flex gap-2 pt-2 border-t border-blue-200">
                       <button
                         onClick={() => handleConfirmCustody(t)}
-                        className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center space-x-2 space-x-reverse text-sm md:text-base font-semibold"
+                        className="flex-1 bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center space-x-2 space-x-reverse text-sm md:text-base font-semibold"
                       >
                         <CheckCircle className="h-4 w-4" />
                         <span>تأكيد الاستلام</span>
                       </button>
                       <button
                         onClick={() => handleRejectCustody(t)}
-                        className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center justify-center space-x-2 space-x-reverse text-sm md:text-base font-semibold"
+                        className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center justify-center space-x-2 space-x-reverse text-sm md:text-base font-semibold"
                       >
                         <X className="h-4 w-4" />
                         <span>رفض</span>
@@ -774,7 +772,7 @@ const EmployeeAdvances: React.FC = () => {
 
         <div className="bg-white border border-gray-200 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm">
           <h3 className="text-base md:text-xl font-bold text-gray-800 mb-4 md:mb-5 flex items-center">
-            <Receipt className="h-5 w-5 md:h-6 md:w-6 ml-2 text-amber-600" />
+            <Receipt className="h-5 w-5 md:h-6 md:w-6 ml-2 text-gold-500" />
             سجل العهده ({filteredTransactions.length})
           </h3>
           <div className="space-y-2 md:space-y-3 max-h-96 overflow-y-auto">
@@ -802,7 +800,7 @@ const EmployeeAdvances: React.FC = () => {
                       )}
                     </div>
                     <div className="text-right sm:mr-3 w-full sm:w-auto">
-                      <p className={`font-bold text-base md:text-lg ${t.type === 'credit' ? 'text-amber-600' : 'text-red-600'}`}>
+                      <p className={`font-bold text-base md:text-lg ${t.type === 'credit' ? 'text-gold-500' : 'text-red-500'}`}>
                         {t.type === 'debit' && '-'}
                         {formatCurrency(Math.abs(t.amount))}
                       </p>
@@ -814,7 +812,7 @@ const EmployeeAdvances: React.FC = () => {
                     {currentUser?.role === 'admin' && (
                       <button
                         onClick={() => openDeleteConfirm(t)}
-                        className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
+                        className="text-red-500 hover:text-red-600 p-2 rounded-full hover:bg-red-100 transition-colors"
                       >
                         <Trash2 className="h-5 w-5" />
                       </button>
@@ -843,18 +841,18 @@ const EmployeeAdvances: React.FC = () => {
               {currentUser?.role === 'admin' && (
                 <form onSubmit={handleEmployeeTransaction} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-bold text-royal-300 mb-2">نوع العملية</label>
+                  <label className="block text-sm font-bold text-royal-200 mb-2">نوع العملية</label>
                   <select
                     value={transactionType}
                     onChange={e => setTransactionType(e.target.value as 'credit' | 'debit')}
-                    className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
+                    className="w-full px-4 py-3 bg-royal-800 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                   >
                     <option value="credit">صرف عهده (إضافة للموظف)</option>
                     <option value="debit">تسوية عهده (استلام من الموظف)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-royal-300 mb-2">المبلغ</label>
+                  <label className="block text-sm font-bold text-royal-200 mb-2">المبلغ</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -863,28 +861,28 @@ const EmployeeAdvances: React.FC = () => {
                       value={transactionAmount}
                       onChange={e => setTransactionAmount(e.target.value)}
                       required
-              className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"                     placeholder="0.00"
+              className="w-full px-4 py-3 bg-royal-800 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"                     placeholder="0.00"
                     />
                     <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gold-500 font-bold">ر.س</span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-royal-300 mb-2">تاريخ العملية</label>
+                  <label className="block text-sm font-bold text-royal-200 mb-2">تاريخ العملية</label>
                   <input
                     type="date"
                     value={transactionDate}
                     onChange={e => setTransactionDate(e.target.value)}
                     required
-                    className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
+                    className="w-full px-4 py-3 bg-royal-800 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-royal-300 mb-2">السبب (اختياري)</label>
+                  <label className="block text-sm font-medium text-royal-200 mb-2">السبب (اختياري)</label>
                   <textarea
                     value={transactionReason}
                     onChange={e => setTransactionReason(e.target.value)}
                     rows={2}
-                    className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
+                    className="w-full px-4 py-3 bg-royal-800 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                     placeholder="مثلاً: مصاريف تسويق، مشتريات نقدية..."
                   />
                 </div>
@@ -911,18 +909,18 @@ const EmployeeAdvances: React.FC = () => {
               {currentUser?.role === 'user' && (
                 <form onSubmit={handleAddExpense} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-bold text-royal-300 mb-2">وصف المصروف</label>
+                    <label className="block text-sm font-bold text-royal-200 mb-2">وصف المصروف</label>
                     <input
                       type="text"
                       value={expenseDescription}
                       onChange={e => setExpenseDescription(e.target.value)}
                       required
-                      className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
+                      className="w-full px-4 py-3 bg-royal-800 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                       placeholder="مثلاً: دفعت لمندوب التوصيل 50 ر.س"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-royal-300 mb-2">المبلغ</label>
+                    <label className="block text-sm font-bold text-royal-200 mb-2">المبلغ</label>
                     <div className="relative">
                       <input
                         type="number"
@@ -931,19 +929,19 @@ const EmployeeAdvances: React.FC = () => {
                         value={expenseAmount}
                         onChange={e => setExpenseAmount(e.target.value)}
                         required
-                        className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
+                        className="w-full px-4 py-3 bg-royal-800 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                         placeholder="0.00"
                       />
                       <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gold-500 font-bold">ر.س</span>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-royal-300 mb-2">فئة المصروف</label>
+                    <label className="block text-sm font-bold text-royal-200 mb-2">فئة المصروف</label>
                     <select
                       value={expenseCategory}
                       onChange={e => setExpenseCategory(e.target.value)}
                       required
-                      className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
+                      className="w-full px-4 py-3 bg-royal-800 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                     >
                       <option value="">اختر فئة...</option>
                       {categories.map(cat => (
@@ -952,13 +950,13 @@ const EmployeeAdvances: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-royal-300 mb-2">تاريخ المصروف</label>
+                    <label className="block text-sm font-bold text-royal-200 mb-2">تاريخ المصروف</label>
                     <input
                       type="date"
                       value={expenseDate}
                       onChange={e => setExpenseDate(e.target.value)}
                       required
-                      className="w-full px-4 py-3 bg-royal-900 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
+                      className="w-full px-4 py-3 bg-royal-800 border border-gold-500/30 text-white rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
                     />
                   </div>
                   <div className="flex gap-3 pt-4 border-t border-gold-500/30">
@@ -988,20 +986,20 @@ const EmployeeAdvances: React.FC = () => {
             <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
               <div className="sticky top-0 bg-white border-b px-8 py-5 flex justify-between items-center z-10 rounded-t-2xl">
                 <h3 className="text-2xl font-bold flex items-center gap-3">
-                  <FileText className="h-7 w-7 text-amber-600" />
+                  <FileText className="h-7 w-7 text-gold-500" />
                   معاينة تقرير العهدة
                 </h3>
                 <div className="flex gap-2">
                   <button
                     onClick={handleExportPDF}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse"
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse"
                   >
                     <Download className="h-4 w-4" />
                     <span>تصدير PDF</span>
                   </button>
                   <button
                     onClick={handleExportExcel}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse"
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse"
                   >
                     <Download className="h-4 w-4" />
                     <span>تصدير Excel</span>
@@ -1026,7 +1024,7 @@ const EmployeeAdvances: React.FC = () => {
 
                   <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-6 mb-8 text-center">
                     <p className="text-lg text-gray-700 mb-2">الرصيد الحالي</p>
-                    <p className={`text-4xl font-bold ${current_balance >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
+                    <p className={`text-4xl font-bold ${current_balance >= 0 ? 'text-gold-500' : 'text-red-500'}`}>
                       {formatCurrency(current_balance)}
                     </p>
                     <p className="text-sm text-gray-600 mt-2">عدد العمليات: {transactions.length}</p>
@@ -1051,7 +1049,7 @@ const EmployeeAdvances: React.FC = () => {
                             </span>
                           </td>
                           <td className="border border-gray-300 px-4 py-3 text-right">
-                            <span className={`font-bold ${t.type === 'credit' ? 'text-amber-600' : 'text-red-600'}`}>
+                            <span className={`font-bold ${t.type === 'credit' ? 'text-gold-500' : 'text-red-500'}`}>
                               {t.type === 'debit' && '-'}
                               {formatCurrency(Math.abs(t.amount))}
                             </span>
@@ -1090,12 +1088,12 @@ const EmployeeAdvances: React.FC = () => {
         <div className="mb-4 md:mb-8 bg-white border border-gray-200 rounded-lg md:rounded-xl p-4 md:p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="bg-red-100 text-red-600 p-2 md:p-3 rounded-lg ml-2 md:ml-4">
+              <div className="bg-red-100 text-red-500 p-2 md:p-3 rounded-lg ml-2 md:ml-4">
                 <DollarSign className="h-5 w-5 md:h-6 md:w-6" />
               </div>
               <div>
                 <p className="text-gray-600 text-xs md:text-sm">إجمالي المستحقات لجميع الموردين</p>
-                <h3 className="text-lg md:text-2xl font-bold text-red-600">{formatCurrency(suppliersReceivables)}</h3>
+                <h3 className="text-lg md:text-2xl font-bold text-red-500">{formatCurrency(suppliersReceivables)}</h3>
               </div>
             </div>
             <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-red-500" />
@@ -1122,7 +1120,7 @@ const EmployeeAdvances: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="font-extrabold text-base md:text-xl text-white group-hover:text-gold-400 transition-colors">{emp.user.full_name}</h3>
-                      <p className="text-xs md:text-sm text-royal-300 truncate max-w-[150px] md:max-w-full">{emp.user.email}</p>
+                      <p className="text-xs md:text-sm text-royal-200 truncate max-w-[150px] md:max-w-full">{emp.user.email}</p>
                     </div>
                   </div>
                 </div>
@@ -1134,7 +1132,7 @@ const EmployeeAdvances: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex justify-between text-xs md:text-sm">
-                    <span className="text-royal-300 font-medium">عدد العمليات:</span>
+                    <span className="text-royal-200 font-medium">عدد العمليات:</span>
                     <span className="font-bold text-white">{emp.transactions.length}</span>
                   </div>
                 </div>
@@ -1148,7 +1146,7 @@ const EmployeeAdvances: React.FC = () => {
       {showDeleteConfirmModal && transactionToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-royal-800 border border-gold-500/30 rounded-2xl p-6 max-w-md w-full shadow-luxury">
-            <div className="flex items-center mb-4 text-red-600">
+            <div className="flex items-center mb-4 text-red-500">
               <AlertCircle className="h-8 w-8 ml-3" />
               <h3 className="text-xl font-bold">تأكيد حذف العملية من العهده</h3>
             </div>

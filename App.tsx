@@ -240,7 +240,7 @@ function App() {
     <PeriodProvider>
     <div className="min-h-screen bg-page-100 font-sans relative" dir="rtl">
       {/* الهيدر */}
-      <header className="bg-royal-900 border-b border-gold-500/30 fixed top-0 left-0 right-0 z-40 shadow-lg">
+      <header className="bg-royal-800 border-b border-gold-500/30 fixed top-0 left-0 right-0 z-40 shadow-lg">
         <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-8">
           <div className="flex justify-between items-center h-14 md:h-16">
             <div className="flex items-center space-x-2 md:space-x-4 space-x-reverse">
