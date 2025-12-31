@@ -35,7 +35,6 @@ import UserManagement from './components/UserManagement';
 import LoginPage from './components/LoginPage';
 import LoadingPage from './components/LoadingPage';
 
-import { useOrders } from './hooks/useOrders';
 import { authService } from './lib/auth';
 import { PeriodProvider } from './contexts/PeriodContext';
 
