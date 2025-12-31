@@ -52,7 +52,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
-  const { orders, stats } = useOrders();
 
   // === قائمة العناصر في السايدبار ===
   const menuItems: MenuItem[] = [

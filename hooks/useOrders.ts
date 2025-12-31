@@ -362,7 +362,8 @@ export const useOrders = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchOrders]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     orders,
