@@ -56,3 +56,13 @@ export interface WebhookData {
   created_at: string;
   updated_at: string;
 }
+
+export interface WebhookData {
+  id: string;
+  source: string;
+  type: string;
+  data: any;
+  timestamp: string;
+  created_at: string;
+  updated_at: string;
+}
