@@ -269,12 +269,16 @@ const Reports: React.FC = () => {
       // Populate all days between start and end
       let iterDate = getUTCCardinalDate(chartRenderStart);
       const finalChartRenderEnd = getUTCCardinalDate(chartRenderEnd);
-      while (iterDate < finalChartRenderEnd) {
+      let safetyCounter = 0;
+      const maxIterations = 10000; // Safety limit to prevent infinite loops
+      
+      while (iterDate < finalChartRenderEnd && safetyCounter < maxIterations) {
         const dateKey = iterDate.toLocaleDateString('en-GB');
         if (!map.has(dateKey)) {
           map.set(dateKey, { date: dateKey, locked: 0, unlocked: 0, sales: 0, costs: 0, profit: 0, orders: 0 });
         }
         iterDate.setDate(iterDate.getDate() + 1);
+        safetyCounter++;
       }
 
       return Array.from(map.values()).sort((a, b) => {
@@ -334,12 +338,16 @@ const Reports: React.FC = () => {
     // Populate all days between start and end to ensure continuous chart line
     let iterDate = new Date(start);
     const finalEnd = new Date(end);
-    while (iterDate <= finalEnd) {
+    let safetyCounter = 0;
+    const maxIterations = 10000; // Safety limit to prevent infinite loops
+    
+    while (iterDate <= finalEnd && safetyCounter < maxIterations) {
       const dateStr = iterDate.toLocaleDateString('en-GB');
       if (!map.has(dateStr)) {
         map.set(dateStr, { date: dateStr, locked: 0, unlocked: 0, sales: 0, costs: 0, profit: 0, orders: 0 });
       }
       iterDate.setDate(iterDate.getDate() + 1);
+      safetyCounter++;
     }
 
     // Convert map values to array and sort by date
