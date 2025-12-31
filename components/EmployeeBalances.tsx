@@ -187,8 +187,8 @@ const EmployeeAdvances: React.FC = () => {
 
     const finalAmount = transactionType === 'credit' ? amount : -amount;
     
-    // For credit transactions (adding custody), set status to pending
-    const transactionStatus = transactionType === 'credit' ? 'pending' : 'confirmed';
+    // جميع المعاملات مؤكدة فوراً بدون انتظار
+    const transactionStatus = 'confirmed';
 
     try {
       const transactionData: any = {
@@ -198,14 +198,10 @@ const EmployeeAdvances: React.FC = () => {
         reason: transactionReason || `عملية ${transactionType === 'credit' ? 'إضافة عهده' : 'تسوية عهده'}`,
         transaction_date: transactionDate,
         created_by: currentUser.id,
-        status: transactionStatus
+        status: transactionStatus,
+        confirmed_at: new Date().toISOString(),
+        confirmed_by: currentUser.id
       };
-
-      // If confirmed (debit), add confirmation details
-      if (transactionStatus === 'confirmed') {
-        transactionData.confirmed_at = new Date().toISOString();
-        transactionData.confirmed_by = currentUser.id;
-      }
 
       const { data: inserted, error: insertError } = await supabase
         .from('employee_balance_transactions')
@@ -225,32 +221,22 @@ const EmployeeAdvances: React.FC = () => {
         status: transactionStatus
       };
 
-      if (transactionStatus === 'pending') {
-        // Add to pending transactions
-        setSelectedEmployee(prev => ({
-          ...prev!,
-          pending_transactions: [newTransaction, ...prev!.pending_transactions]
-        }));
+      // إضافة المعاملة للمعاملات المؤكدة وتحديث الرصيد فوراً
+      setSelectedEmployee(prev => ({
+        ...prev!,
+        transactions: [newTransaction, ...prev!.transactions],
+        current_balance: prev!.current_balance + finalAmount
+      }));
 
-        toast.success('تم إضافة العهدة بنجاح. في انتظار تأكيد الموظف');
-      } else {
-        // Add to confirmed transactions and update balance
-        setSelectedEmployee(prev => ({
-          ...prev!,
-          transactions: [newTransaction, ...prev!.transactions],
-          current_balance: prev!.current_balance + finalAmount
-        }));
+      setEmployees(prev =>
+        prev.map(emp =>
+          emp.user.id === selectedEmployee.user.id
+            ? { ...emp, current_balance: emp.current_balance + finalAmount }
+            : emp
+        )
+      );
 
-        setEmployees(prev =>
-          prev.map(emp =>
-            emp.user.id === selectedEmployee.user.id
-              ? { ...emp, current_balance: emp.current_balance + finalAmount }
-              : emp
-          )
-        );
-
-        toast.success('تم تسجيل العملية في عهده بنجاح');
-      }
+      toast.success('تم تسجيل العملية في عهده بنجاح');
 
       resetForm();
       setShowTransactionModal(false);
@@ -280,15 +266,25 @@ const EmployeeAdvances: React.FC = () => {
       // عند إضافة سجل في expenses. بما أننا لا نملك صلاحية تعديل الـ DB، سنقوم بإضافة المصروف أولاً ثم الخصم.
       
       // 1. إضافة المصروف في جدول expenses
+      // نحتاج لإيجاد اسم الفئة من المعرف
+      const selectedCategory = categories.find(cat => cat.id === expenseCategory);
+      if (!selectedCategory) {
+        toast.error('الرجاء اختيار فئة صحيحة');
+        return;
+      }
+
       const { data: expenseResult, error: expenseError } = await supabase
         .from('expenses')
         .insert([{
           description: expenseDescription,
           amount: amount,
-          category_id: expenseCategory,
+          category: selectedCategory.name, // استخدام اسم الفئة وليس المعرف
           date: expenseDate,
           created_by: currentUser.id,
-          status: 'approved' // تلقائياً معتمد
+          user_id: currentUser.id,
+          status: 'approved',
+          approved_by: currentUser.id,
+          approved_at: new Date().toISOString()
         }])
         .select()
         .single();
@@ -298,7 +294,7 @@ const EmployeeAdvances: React.FC = () => {
         throw expenseError;
       }
 
-      // 2. محاولة خصم المبلغ من عهدة الموظف (مع معالجة الأخطاء الصامتة)
+      // 2. خصم المبلغ من عهدة الموظف فوراً ومباشرة
       const { error: balanceError } = await supabase
         .from('employee_balance_transactions')
         .insert([{
@@ -307,16 +303,20 @@ const EmployeeAdvances: React.FC = () => {
           type: 'debit',
           reason: `مصروف: ${expenseDescription}`,
           transaction_date: expenseDate,
-          // related_expense_id: expenseResult.id // إزالة الربط المعقد
+          created_by: currentUser.id,
+          status: 'confirmed',
+          confirmed_at: new Date().toISOString(),
+          confirmed_by: currentUser.id
         }]);
 
       if (balanceError) {
         console.error('خطأ في خصم العهدة (transactions):', balanceError);
-        // إرسال تنبيه بسيط للمستخدم بأن الخصم فشل
-        toast.error(`تم إضافة المصروف بنجاح، لكن فشل خصمه من العهدة.`);
-      } else {
-        toast.success(`تم إضافة المصروف وخصم ${amount.toFixed(2)} ر.س من عهدتك بنجاح`);
+        // حذف المصروف المضاف لأن الخصم فشل
+        await supabase.from('expenses').delete().eq('id', expenseResult.id);
+        throw new Error(`فشل خصم المبلغ من العهدة: ${balanceError.message}`);
       }
+      
+      toast.success(`تم إضافة المصروف وخصم ${amount.toFixed(2)} ر.س من عهدتك بنجاح`);
       
       // إعادة تعيين النموذج
       setExpenseDescription('');
@@ -329,69 +329,6 @@ const EmployeeAdvances: React.FC = () => {
       console.error('خطأ في إضافة المصروف:', err);
       // إظهار رسالة الخطأ الدقيقة
       toast.error(`فشل في إضافة المصروف: ${err.message || 'خطأ غير معروف'}`);
-    }
-  };
-
-  const handleConfirmCustody = async (transaction: EmployeeBalanceTransaction) => {
-    if (!currentUser) return;
-
-    try {
-      const { error: updateError } = await supabase
-        .from('employee_balance_transactions')
-        .update({
-          status: 'confirmed',
-          confirmed_at: new Date().toISOString(),
-          confirmed_by: currentUser.id
-        })
-        .eq('id', transaction.id);
-
-      if (updateError) throw updateError;
-
-      // Remove from pending and add to confirmed transactions
-      setSelectedEmployee(prev => ({
-        ...prev!,
-        pending_transactions: prev!.pending_transactions.filter(t => t.id !== transaction.id),
-        transactions: [{ ...transaction, status: 'confirmed' }, ...prev!.transactions],
-        current_balance: prev!.current_balance + transaction.amount
-      }));
-
-      toast.success(`تم تأكيد استلام العهدة. رصيدك الحالي: ${(selectedEmployee!.current_balance + transaction.amount).toLocaleString('EN-US')} ر.س`);
-      await fetchEmployeesData(); // Refresh data
-    } catch (err: any) {
-      console.error('خطأ في تأكيد العهدة:', err);
-      toast.error(err.message || 'فشل تأكيد العهدة');
-    }
-  };
-
-  const handleRejectCustody = async (transaction: EmployeeBalanceTransaction) => {
-    if (!currentUser) return;
-
-    const confirmed = window.confirm('هل أنت متأكد من رفض هذه العهدة؟');
-    if (!confirmed) return;
-
-    try {
-      const { error: updateError } = await supabase
-        .from('employee_balance_transactions')
-        .update({
-          status: 'rejected',
-          confirmed_at: new Date().toISOString(),
-          confirmed_by: currentUser.id
-        })
-        .eq('id', transaction.id);
-
-      if (updateError) throw updateError;
-
-      // Remove from pending transactions
-      setSelectedEmployee(prev => ({
-        ...prev!,
-        pending_transactions: prev!.pending_transactions.filter(t => t.id !== transaction.id)
-      }));
-
-      toast.success('تم رفض العهدة');
-      await fetchEmployeesData(); // Refresh data
-    } catch (err: any) {
-      console.error('خطأ في رفض العهدة:', err);
-      toast.error(err.message || 'فشل رفض العهدة');
     }
   };
 
@@ -694,89 +631,6 @@ const EmployeeAdvances: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Pending custody confirmations section - only show for employees viewing their own pending */}
-        {filteredPendingTransactions && filteredPendingTransactions.length > 0 && currentUser?.id === user.id && (
-          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm mb-4 md:mb-6">
-            <h3 className="text-base md:text-xl font-bold text-blue-800 mb-4 md:mb-5 flex items-center">
-              <AlertCircle className="h-5 w-5 md:h-6 md:w-6 ml-2" />
-              العهد في انتظار التأكيد ({filteredPendingTransactions.length})
-            </h3>
-            <p className="text-sm text-blue-700 mb-4">لديك عهد جديدة تحتاج إلى تأكيد الاستلام</p>
-            <div className="space-y-2 md:space-y-3">
-              {filteredPendingTransactions.map(t => (
-                <div key={t.id} className="bg-white border-2 border-blue-300 rounded-lg md:rounded-xl p-3 md:p-4 shadow-sm">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Banknote className="h-5 w-5 text-blue-600" />
-                          <span className="font-bold text-blue-800">عهدة جديدة</span>
-                          <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
-                            #{t.id.slice(-6)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600">التاريخ: {formatDate(t.transaction_date)}</p>
-                        {t.reason && (
-                          <p className="text-sm text-gray-700 mt-1 italic">"{t.reason}"</p>
-                        )}
-                        <div className="flex items-center mt-1 text-xs text-gray-500">
-                          <User className="h-3 w-3 ml-1" />
-                          <span>من: {t.created_by_user?.full_name || 'الإدارة'}</span>
-                        </div>
-                      </div>
-                      <div className="text-left">
-                        <p className="text-2xl font-bold text-green-600">
-                          {formatCurrency(Math.abs(t.amount))}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 pt-2 border-t border-blue-200">
-                      <button
-                        onClick={() => handleConfirmCustody(t)}
-                        className="flex-1 bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center space-x-2 space-x-reverse text-sm md:text-base font-semibold"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        <span>تأكيد الاستلام</span>
-                      </button>
-                      <button
-                        onClick={() => handleRejectCustody(t)}
-                        className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center justify-center space-x-2 space-x-reverse text-sm md:text-base font-semibold"
-                      >
-                        <X className="h-4 w-4" />
-                        <span>رفض</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Admin view of pending transactions */}
-        {pending_transactions && pending_transactions.length > 0 && currentUser?.role === 'admin' && currentUser?.id !== user.id && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm mb-4 md:mb-6">
-            <h3 className="text-base md:text-xl font-bold text-yellow-800 mb-4 flex items-center">
-              <AlertCircle className="h-5 w-5 md:h-6 md:w-6 ml-2" />
-              عهد معلقة ({pending_transactions.length})
-            </h3>
-            <p className="text-sm text-yellow-700 mb-4">في انتظار تأكيد الموظف</p>
-            <div className="space-y-2">
-              {pending_transactions.map(t => (
-                <div key={t.id} className="bg-white border border-yellow-300 rounded-lg p-3 shadow-sm">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-yellow-800">{formatCurrency(Math.abs(t.amount))}</p>
-                      <p className="text-xs text-gray-600">{formatDate(t.transaction_date)}</p>
-                    </div>
-                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">في الانتظار</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="bg-white border border-gray-200 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm">
           <h3 className="text-base md:text-xl font-bold text-gray-800 mb-4 md:mb-5 flex items-center">
