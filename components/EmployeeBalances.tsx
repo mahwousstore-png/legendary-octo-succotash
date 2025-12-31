@@ -88,16 +88,24 @@ const EmployeeAdvances: React.FC = () => {
   const fetchEmployeesData = async () => {
     setLoading(true);
     try {
-      const { data: usersData, error: usersError } = await supabase
+      // جلب بيانات الموظفين (للمدير) أو بيانات الموظف الحالي فقط (للمستخدم)
+      let usersQuery = supabase
         .from('user_profiles')
         .select('*')
-        .eq('role', 'user')
-        .eq('is_active', true)
-        .order('full_name');
+        .eq('is_active', true);
+      
+      if (currentUser?.role === 'user') {
+        usersQuery = usersQuery.eq('id', currentUser.id);
+      } else {
+        usersQuery = usersQuery.eq('role', 'user').order('full_name');
+      }
+
+      const { data: usersData, error: usersError } = await usersQuery;
 
       if (usersError) throw usersError;
 
-      const { data: transactionsData, error: transactionsError } = await supabase
+      // جلب العمليات
+      let transactionsQuery = supabase
         .from('employee_balance_transactions')
         .select(`
           *,
@@ -105,6 +113,12 @@ const EmployeeAdvances: React.FC = () => {
           created_by_user:user_profiles!employee_balance_transactions_created_by_fkey(full_name)
         `)
         .order('transaction_date', { ascending: false });
+
+      if (currentUser?.role === 'user') {
+        transactionsQuery = transactionsQuery.eq('user_id', currentUser.id);
+      }
+
+      const { data: transactionsData, error: transactionsError } = await transactionsQuery;
 
       if (transactionsError) throw transactionsError;
 
@@ -145,6 +159,11 @@ const EmployeeAdvances: React.FC = () => {
         .sort((a, b) => a.user.full_name.localeCompare(b.user.full_name));
 
       setEmployees(summaries);
+      
+      // إذا كان المستخدم موظفاً عادياً، نفتح تفاصيله تلقائياً
+      if (currentUser?.role === 'user' && summaries.length > 0) {
+        setSelectedEmployee(summaries[0]);
+      }
     } catch (e) {
       console.error('Error fetching employee advances:', e);
       toast.error('فشل جلب بيانات عهد الموظفين');
@@ -601,15 +620,17 @@ const EmployeeAdvances: React.FC = () => {
       <div className="p-3 md:p-6 max-w-7xl mx-auto">
         <Toaster position="top-center" reverseOrder={false} />
 
-        <div className="flex justify-start items-center mb-4 md:mb-6">
-          <button
-            onClick={() => setSelectedEmployee(null)}
-            className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4 md:h-5 md:w-5 ml-2" />
-            <span className="font-medium text-sm md:text-base">رجوع</span>
-          </button>
-        </div>
+        {currentUser?.role === 'admin' && (
+          <div className="flex justify-start items-center mb-4 md:mb-6">
+            <button
+              onClick={() => setSelectedEmployee(null)}
+              className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5 ml-2" />
+              <span className="font-medium text-sm md:text-base">رجوع</span>
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8 gap-4">
           <div className="flex items-center">
@@ -1057,8 +1078,12 @@ const EmployeeAdvances: React.FC = () => {
       <Toaster position="top-center" reverseOrder={false} />
       <div className="p-3 md:p-6 max-w-7xl mx-auto">
         <div className="mb-6 md:mb-10 text-center">
-          <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 mb-2 md:mb-3">عهد الموظفين</h2>
-          <p className="text-gray-600 text-sm md:text-lg">اضغط على أي موظف لعرض عهده</p>
+          <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 mb-2 md:mb-3">
+            {currentUser?.role === 'admin' ? 'عهد الموظفين' : 'عهدتي'}
+          </h2>
+          <p className="text-gray-600 text-sm md:text-lg">
+            {currentUser?.role === 'admin' ? 'اضغط على أي موظف لعرض عهده' : 'إدارة المصروفات من عهدتك الشخصية'}
+          </p>
         </div>
 
         {/* الفلتر الزمني الشامل */}
