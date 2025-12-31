@@ -275,6 +275,10 @@ const EmployeeAdvances: React.FC = () => {
     }
 
     try {
+      // دمج عمليتي إضافة المصروف وخصم العهدة في عملية واحدة (Insert)
+      // هذا يتطلب وجود Trigger/Function في Supabase يقوم بإنشاء سجل في employee_balance_transactions
+      // عند إضافة سجل في expenses. بما أننا لا نملك صلاحية تعديل الـ DB، سنقوم بإضافة المصروف أولاً ثم الخصم.
+      
       // 1. إضافة المصروف في جدول expenses
       const { data: expenseResult, error: expenseError } = await supabase
         .from('expenses')
@@ -307,11 +311,13 @@ const EmployeeAdvances: React.FC = () => {
           status: 'confirmed',
           confirmed_at: new Date().toISOString(),
           confirmed_by: currentUser.id,
-          // related_expense_id: expenseResult.id
+          related_expense_id: expenseResult.id // ربط المصروف بالعملية
         }]);
 
       if (balanceError) {
         console.error('خطأ في خصم العهدة (transactions):', balanceError);
+        // إذا فشل الخصم، يجب حذف المصروف الذي تم إضافته
+        await supabase.from('expenses').delete().eq('id', expenseResult.id);
         throw balanceError;
       }
 
@@ -326,7 +332,10 @@ const EmployeeAdvances: React.FC = () => {
       await fetchEmployeesData(); // تحديث بيانات العهدة بعد الخصم
     } catch (err: any) {
       console.error('خطأ في إضافة المصروف:', err);
+      // إظهار رسالة الخطأ الدقيقة
       toast.error(`فشل في إضافة المصروف: ${err.message || 'خطأ غير معروف'}`);
+      // إظهار تنبيه قوي لضمان رؤية رسالة الخطأ
+      alert(`فشل في إضافة المصروف: ${err.message || 'خطأ غير معروف'}`);
     }
   };
 
