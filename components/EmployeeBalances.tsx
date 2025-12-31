@@ -311,10 +311,12 @@ const EmployeeAdvances: React.FC = () => {
 
       if (balanceError) {
         console.error('خطأ في خصم العهدة (transactions):', balanceError);
-        toast.error(`تم إضافة المصروف بنجاح، لكن فشل خصمه من العهدة: ${balanceError.message}`);
-      } else {
-        toast.success(`تم إضافة المصروف وخصم ${amount.toFixed(2)} ر.س من عهدتك بنجاح`);
+        // حذف المصروف المضاف لأن الخصم فشل
+        await supabase.from('expenses').delete().eq('id', expenseResult.id);
+        throw new Error(`فشل خصم المبلغ من العهدة: ${balanceError.message}`);
       }
+      
+      toast.success(`تم إضافة المصروف وخصم ${amount.toFixed(2)} ر.س من عهدتك بنجاح`);
       
       // إعادة تعيين النموذج
       setExpenseDescription('');
