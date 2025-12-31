@@ -2,17 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { DollarSign, TrendingUp, Package, Truck } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
 import { useOrders } from '../hooks/useOrders';
-import { createClient } from '@supabase/supabase-js';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { formatDateTime, getDateRangeByPeriod, getPeriodLabel } from '../lib/dateFormatter';
 import GlobalPeriodFilter from './GlobalPeriodFilter';
 import { usePeriodFilter } from '../lib/usePeriodFilter';
-
-// إنشاء Supabase Client مرة واحدة فقط خارج المكون
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { supabase } from '../lib/supabase';
 
 const TAX_RATE = 0.15;
 
