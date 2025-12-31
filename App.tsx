@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import {
   Home,
   ShoppingCart,
@@ -18,20 +18,23 @@ import {
   Truck,
 } from 'lucide-react';
 
-import Dashboard from './components/Dashboard';
-import UnlockedOrders from './components/UnlockedOrders';
-import LockedOrders from './components/LockedOrders';
-import Expenses from './components/Expenses';
-import Inventory from './components/Inventory';
-import CancelledOrders from './components/CancelledOrders';
-import ShippingCompanies from './components/ShippingCompanies';
-import Reports from './components/Reports';
-import CustomReports from './components/CustomReports';
-import Suppliers from './components/Suppliers';
-import PaymentMethodsDashboard from './components/PaymentMethodsDashboard';
-import EmployeeBalances from './components/EmployeeBalances';
-import SupplierLedger from './components/SupplierLedger';
-import UserManagement from './components/UserManagement';
+// Lazy load all components to fix minification issues
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const UnlockedOrders = lazy(() => import('./components/UnlockedOrders'));
+const LockedOrders = lazy(() => import('./components/LockedOrders'));
+const Expenses = lazy(() => import('./components/Expenses'));
+const Inventory = lazy(() => import('./components/Inventory'));
+const CancelledOrders = lazy(() => import('./components/CancelledOrders'));
+const ShippingCompanies = lazy(() => import('./components/ShippingCompanies'));
+const Reports = lazy(() => import('./components/Reports'));
+const CustomReports = lazy(() => import('./components/CustomReports'));
+const Suppliers = lazy(() => import('./components/Suppliers'));
+const PaymentMethodsDashboard = lazy(() => import('./components/PaymentMethodsDashboard'));
+const EmployeeBalances = lazy(() => import('./components/EmployeeBalances'));
+const SupplierLedger = lazy(() => import('./components/SupplierLedger'));
+const UserManagement = lazy(() => import('./components/UserManagement'));
+
+// These components are needed immediately, so we import them normally
 import LoginPage from './components/LoginPage';
 import LoadingPage from './components/LoadingPage';
 import LoadingScreen from './components/LoadingScreen';
