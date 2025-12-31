@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import {
   Home,
   ShoppingCart,
@@ -36,7 +36,6 @@ import LoginPage from './components/LoginPage';
 import LoadingPage from './components/LoadingPage';
 import LoadingScreen from './components/LoadingScreen';
 
-import { useOrders } from './hooks/useOrders';
 import { authService } from './lib/auth';
 import { PeriodProvider } from './contexts/PeriodContext';
 
@@ -49,12 +48,18 @@ interface MenuItem {
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id?: string;
+    full_name?: string;
+    role?: string;
+    permissions?: Record<string, boolean>;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
-  const { orders, stats } = useOrders();
+  // Remove unused orders and stats
+  // const { orders, stats } = useOrders();
 
   // === قائمة العناصر في السايدبار ===
   const menuItems: MenuItem[] = [
