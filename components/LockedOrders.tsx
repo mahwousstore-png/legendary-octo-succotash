@@ -528,8 +528,7 @@ const LockedOrders: React.FC = () => {
           </button>
           <button onClick={() => setShowPreview(true)} className="flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-green-600 text-white rounded-lg md:rounded-xl hover:bg-green-700 text-sm md:text-base min-h-[44px]">
             <Eye className="h-4 w-4 md:h-5 md:w-5" />
-            <span className="hidden sm:inline">معاينة</span>
-            <span className="sm:inline">معاينة</span>
+            <span>معاينة</span>
           </button>
         </div>
       </div>
