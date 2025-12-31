@@ -285,7 +285,7 @@ const EmployeeAdvances: React.FC = () => {
           status: 'confirmed',
           confirmed_at: new Date().toISOString(),
           confirmed_by: currentUser.id,
-          related_expense_id: expenseResult.id
+          // related_expense_id: expenseResult.id
         }]);
 
       if (balanceError) throw balanceError;
