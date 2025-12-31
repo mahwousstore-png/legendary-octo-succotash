@@ -11,6 +11,8 @@ import { authService } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatDateTime } from '../lib/dateFormatter'; // استيراد دالة formatDateTime المركزية
+import GlobalPeriodFilter from './GlobalPeriodFilter';
+import { usePeriodFilter } from '../lib/usePeriodFilter';
 
 interface PaymentMethod {
   id: string;
@@ -147,7 +149,10 @@ const LockedOrders: React.FC = () => {
     };
   };
 
-  const lockedOrders = orders
+  // تطبيق الفلتر الزمني الشامل أولاً
+  const periodFilteredOrders = usePeriodFilter(orders, 'order_date');
+
+  const lockedOrders = periodFilteredOrders
     .filter(order => order.is_locked === true)
     .filter(order => {
       if (!searchTerm) return true;
@@ -508,6 +513,9 @@ const LockedOrders: React.FC = () => {
         <h2 className="text-2xl md:text-3xl font-bold text-gray-900">الطلبات المقفلة</h2>
         <p className="text-gray-600 mt-1 md:mt-2 text-sm md:text-base">إدارة كاملة للطلبات المكتملة مع تحليل مالي دقيق</p>
       </div>
+
+      <GlobalPeriodFilter />
+
       <div className="bg-white rounded-xl md:rounded-2xl shadow-lg p-3 md:p-6 mb-4 md:mb-6">
         <div className="flex flex-col gap-3 md:flex-row md:gap-4 justify-between">
           <div className="relative flex-1 md:max-w-md">

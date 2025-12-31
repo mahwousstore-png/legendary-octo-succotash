@@ -7,6 +7,8 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
 import { authService } from '../lib/auth';
+import GlobalPeriodFilter from './GlobalPeriodFilter';
+import { usePeriodFilter } from '../lib/usePeriodFilter';
 
 interface CancelledOrder {
   id: string;
@@ -28,9 +30,6 @@ const CancelledOrders: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [dateFilter, setDateFilter] = useState('all');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [showPreview, setShowPreview] = useState(false);
@@ -243,45 +242,17 @@ const CancelledOrders: React.FC = () => {
     }
   };
 
+  // تطبيق الفلتر الزمني الشامل أولاً
+  const periodFilteredOrders = usePeriodFilter(cancelledOrders, 'order_date');
+
   const filteredCancelledOrders = useMemo(() => {
-    let filtered = cancelledOrders.filter(order => {
+    return periodFilteredOrders.filter(order => {
       const matchesSearch = order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.cancellation_reason.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const orderDate = new Date(order.updated_at || order.order_date);
-      let matchesDate = true;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const lastWeek = new Date(today);
-      lastWeek.setDate(lastWeek.getDate() - 7);
-
-      switch (dateFilter) {
-        case 'today':
-          matchesDate = orderDate.toDateString() === today.toDateString();
-          break;
-        case 'yesterday':
-          matchesDate = orderDate.toDateString() === yesterday.toDateString();
-          break;
-        case 'last_week':
-          matchesDate = orderDate >= lastWeek && orderDate <= today;
-          break;
-        case 'custom':
-          const from = fromDate ? new Date(fromDate) : null;
-          const to = toDate ? new Date(toDate) : null;
-          if (from && to) {
-            matchesDate = orderDate >= from && orderDate <= to;
-          }
-          break;
-        default:
-          matchesDate = true;
-      }
-      return matchesSearch && matchesDate;
+      return matchesSearch;
     });
-    return filtered;
-  }, [cancelledOrders, searchTerm, dateFilter, fromDate, toDate]);
+  }, [periodFilteredOrders, searchTerm]);
 
   const totalPages = Math.ceil(filteredCancelledOrders.length / itemsPerPage);
   const paginatedCancelledOrders = filteredCancelledOrders.slice(
@@ -290,24 +261,6 @@ const CancelledOrders: React.FC = () => {
   );
 
   const totalFees = cancelledOrders.reduce((sum, order) => sum + order.cancellation_fee, 0);
-
-  const getLastWeekDates = () => {
-    const today = new Date();
-    const lastWeek = new Date(today);
-    lastWeek.setDate(lastWeek.getDate() - 7);
-    return {
-      from: lastWeek.toISOString().split('T')[0],
-      to: today.toISOString().split('T')[0]
-    };
-  };
-
-  useEffect(() => {
-    if (dateFilter === 'last_week') {
-      const dates = getLastWeekDates();
-      setFromDate(dates.from);
-      setToDate(dates.to);
-    }
-  }, [dateFilter]);
 
   if (loading) {
     return (
@@ -364,6 +317,8 @@ const CancelledOrders: React.FC = () => {
         </div>
       </div>
 
+      <GlobalPeriodFilter />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
@@ -418,45 +373,6 @@ const CancelledOrders: React.FC = () => {
               className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
               aria-label="البحث في الطلبات"
             />
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <select
-              value={dateFilter}
-              onChange={(e) => {
-                setDateFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-white"
-              aria-label="فلترة حسب التاريخ"
-            >
-              <option value="all">جميع التواريخ</option>
-              <option value="today">اليوم</option>
-              <option value="yesterday">أمس</option>
-              <option value="last_week">آخر أسبوع</option>
-              <option value="custom">تاريخ مخصص</option>
-            </select>
-            {dateFilter === 'custom' && (
-              <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200">
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="px-2 py-2 bg-transparent border-none focus:ring-0 text-sm"
-                />
-                <span className="text-gray-400">-</span>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="px-2 py-2 bg-transparent border-none focus:ring-0 text-sm"
-                />
-              </div>
-            )}
-            {dateFilter === 'last_week' && (
-              <div className="flex items-center px-4 bg-gray-50 rounded-xl border border-gray-200 text-sm text-gray-600">
-                من {formatNumericDate(getLastWeekDates().from)} إلى {formatNumericDate(getLastWeekDates().to)}
-              </div>
-            )}
           </div>
         </div>
       </div>
