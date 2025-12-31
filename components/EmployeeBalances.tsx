@@ -307,14 +307,13 @@ const EmployeeAdvances: React.FC = () => {
           type: 'debit',
           reason: `مصروف: ${expenseDescription}`,
           transaction_date: expenseDate,
-          related_expense_id: expenseResult.id // ربط المصروف بالعملية
+          // related_expense_id: expenseResult.id // إزالة الربط المعقد
         }]);
 
       if (balanceError) {
         console.error('خطأ في خصم العهدة (transactions):', balanceError);
-        // إرسال تنبيه للمدير بأن الخصم فشل
-        toast.error(`تم إضافة المصروف بنجاح، لكن فشل خصمه من العهدة. يرجى مراجعة المدير.`);
-        // لا نرفع الخطأ هنا، بل نتركه يكمل لضمان تحديث الواجهة
+        // إرسال تنبيه بسيط للمستخدم بأن الخصم فشل
+        toast.error(`تم إضافة المصروف بنجاح، لكن فشل خصمه من العهدة.`);
       } else {
         toast.success(`تم إضافة المصروف وخصم ${amount.toFixed(2)} ر.س من عهدتك بنجاح`);
       }
