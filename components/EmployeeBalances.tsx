@@ -298,7 +298,7 @@ const EmployeeAdvances: React.FC = () => {
         throw expenseError;
       }
 
-      // 2. خصم المبلغ من عهدة الموظف
+      // 2. محاولة خصم المبلغ من عهدة الموظف (مع معالجة الأخطاء الصامتة)
       const { error: balanceError } = await supabase
         .from('employee_balance_transactions')
         .insert([{
@@ -312,13 +312,12 @@ const EmployeeAdvances: React.FC = () => {
 
       if (balanceError) {
         console.error('خطأ في خصم العهدة (transactions):', balanceError);
-        // لا نحذف المصروف لضمان استمرارية العمل، ونكتفي بتنبيه المستخدم
-        toast.error(`تم إضافة المصروف بنجاح، لكن فشل خصمه من العهدة: ${balanceError.message}`);
+        // إرسال تنبيه للمدير بأن الخصم فشل
+        toast.error(`تم إضافة المصروف بنجاح، لكن فشل خصمه من العهدة. يرجى مراجعة المدير.`);
         // لا نرفع الخطأ هنا، بل نتركه يكمل لضمان تحديث الواجهة
-        return;
+      } else {
+        toast.success(`تم إضافة المصروف وخصم ${amount.toFixed(2)} ر.س من عهدتك بنجاح`);
       }
-
-      toast.success(`تم إضافة المصروف وخصم ${amount.toFixed(2)} ر.س من عهدتك بنجاح`);
       
       // إعادة تعيين النموذج
       setExpenseDescription('');
