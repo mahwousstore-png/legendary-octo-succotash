@@ -14,6 +14,9 @@ import { saveAs } from 'file-saver';
 import { supabase } from '../lib/supabase'; // افتراض: إضافة import لـ supabase للعمليات
 import { authService } from '../lib/auth'; // إضافة: استيراد authService للتحقق من الصلاحيات
 import { formatDateTime } from '../lib/dateFormatter'; // استيراد دالة formatDateTime المركزية
+import GlobalPeriodFilter from './GlobalPeriodFilter';
+import { usePeriodFilter } from '../lib/usePeriodFilter';
+
 // إضافة: API Key للـ AI (يجب تعيينه في environment variables كـ VITE_ATLASCLOUD_API_KEY)
 const ATLASCLOUD_API_KEY = import.meta.env.VITE_ATLASCLOUD_API_KEY || '';
 const NewOrders: React.FC = () => {
@@ -35,8 +38,6 @@ const NewOrders: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPayment, setFilterPayment] = useState<string>('all');
   const [filterShipping, setFilterShipping] = useState<string>('all');
-  const [fromDate, setFromDate] = useState<string>('');
-  const [toDate, setToDate] = useState<string>('');
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkAction, setBulkAction] = useState<'lock' | 'delete'>('lock');
@@ -180,7 +181,10 @@ const NewOrders: React.FC = () => {
     return map[method] || method;
   };
   // فلترة + ترتيب من الأحدث إلى الأقدم (استثناء الملغيات من التحديد، لكن عرضها)
-  const filteredOrders = orders
+  // تطبيق الفلتر الزمني الشامل أولاً
+  const periodFilteredOrders = usePeriodFilter(orders, 'order_date');
+
+  const filteredOrders = periodFilteredOrders
     .filter(order => order.is_locked === false)
     .filter(order => {
       // فلتر الحالة
@@ -189,12 +193,6 @@ const NewOrders: React.FC = () => {
       if (filterPayment !== 'all' && order.payment_method !== filterPayment) return false;
       // فلتر شركة الشحن
       if (filterShipping !== 'all' && order.shipping_company !== filterShipping) return false;
-      // فلتر التاريخ
-      if (fromDate || toDate) {
-        const orderDate = new Date(order.order_date).toISOString().split('T')[0];
-        if (fromDate && orderDate < fromDate) return false;
-        if (toDate && orderDate > toDate) return false;
-      }
       if (!searchTerm) return true;
       const term = searchTerm.toLowerCase();
       const name = (order.customer_name || '').toLowerCase();
@@ -1248,6 +1246,9 @@ ${pastedText}
           </button>
         </div>
       </div>
+
+      <GlobalPeriodFilter />
+
       {/* === شريط البحث والفلاتر === */}
       <div className="bg-white rounded-xl md:rounded-2xl shadow-md border border-slate-100 overflow-hidden mb-4 md:mb-6">
         <div className="p-3 md:p-5 lg:p-7">
@@ -1298,26 +1299,6 @@ ${pastedText}
                   <option key={opt.name} value={opt.name}>{opt.name}</option>
                 ))}
               </select>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">من تاريخ</label>
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={e => setFromDate(e.target.value)}
-                  className="w-full px-2 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm min-h-[44px]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">إلى تاريخ</label>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={e => setToDate(e.target.value)}
-                  className="w-full px-2 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm min-h-[44px]"
-                />
-              </div>
             </div>
             <button
               onClick={exportToExcel}
