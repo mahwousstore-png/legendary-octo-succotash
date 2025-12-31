@@ -879,7 +879,7 @@ const EmployeeAdvances: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <labelclassName="block text-sm font-medium text-royal-300 mb-2"السبب (اختياري)</label>
+                  <label className="block text-sm font-medium text-royal-300 mb-2">السبب (اختياري)</label>
                   <textarea
                     value={transactionReason}
                     onChange={e => setTransactionReason(e.target.value)}
@@ -1018,7 +1018,7 @@ const EmployeeAdvances: React.FC = () => {
               <div className="p-8">
                 <div id="employee-preview-content" className="bg-white" dir="rtl">
                   <div className="text-center mb-8 border-b pb-6">
-                    <h1className="text-xl font-bold text-gold-500 mb-6"2">
+                    <h1 className="text-xl font-bold text-gold-500 mb-6">
                       تقرير عهدة الموظف: {user.full_name}
                     </h1>
                     <p className="text-gray-600">تاريخ التقرير: {formatDateTime(new Date())}</p>
