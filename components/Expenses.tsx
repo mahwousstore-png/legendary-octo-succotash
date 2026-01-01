@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, CreditCard as Edit, Trash2, Calendar, DollarSign, Tag, FileText, TrendingUp, Search, Download, List, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, CreditCard as Edit, Trash2, Calendar, DollarSign, Tag, FileText, TrendingUp, Search, Download, List, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { authService } from '../lib/auth';
 import toast, { Toaster } from 'react-hot-toast';
